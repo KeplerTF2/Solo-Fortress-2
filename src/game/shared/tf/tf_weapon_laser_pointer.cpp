@@ -299,7 +299,7 @@ void CTFLaserPointer::UpdateLaserDot( void )
 	Vector vecEndPos = vecMuzzlePos + ( forward * MAX_TRACE_LENGTH );
 
 	trace_t	trace;
-	CTraceFilterIgnoreTeammatesAndTeamObjects filter( pPlayer, COLLISION_GROUP_NONE, pPlayer->GetTeamNumber() );
+	CTraceFilterIgnoreTeammatesAndTeamObjects filter( pPlayer, COLLISION_GROUP_NONE, -1 );
 	UTIL_TraceLine( vecMuzzlePos, vecEndPos, MASK_SOLID, &filter, &trace );
 
 	if ( m_hLaserDot )
@@ -431,7 +431,7 @@ int CLaserDot::DrawModel( int flags )
 		}
 
 		trace_t	trace;
-		CTraceFilterIgnoreTeammatesAndTeamObjects filter( pPlayer, COLLISION_GROUP_NONE, pPlayer->GetTeamNumber() );
+		CTraceFilterIgnoreTeammatesAndTeamObjects filter( pPlayer, COLLISION_GROUP_NONE, -1 );
 		UTIL_TraceLine( vecAttachment, vecAttachment + ( vecDir * flDist ), MASK_SOLID, &filter, &trace );
 
 		// Backup off the hit plane, towards the source

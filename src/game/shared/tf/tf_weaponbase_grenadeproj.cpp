@@ -727,21 +727,17 @@ void CTFWeaponBaseGrenadeProj::VPhysicsUpdate( IPhysicsObject *pPhysics )
 	CTraceFilterCollisionGrenades filter( this, GetThrower() );
 	
 	ITraceFilter *pFilterChain = NULL;
-	CTraceFilterIgnoreFriendlyCombatItems filterCombatItems( this, COLLISION_GROUP_NONE, GetTeamNumber(), true );
-	if ( TFGameRules() && TFGameRules()->GameModeUsesUpgrades() )
-	{
-		pFilterChain = &filterCombatItems;
-	}
 	CTraceFilterChain filterChain( &filter, pFilterChain );
 
 	trace_t tr;
 	UTIL_TraceLine( start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX|CONTENTS_MONSTER|CONTENTS_SOLID, &filterChain, &tr );
 
-	bool bHitEnemy = tr.m_pEnt && tr.m_pEnt->GetTeamNumber() == GetEnemyTeam( GetTeamNumber() );
-	bool bHitFriendly = tr.m_pEnt && tr.m_pEnt->GetTeamNumber() == GetTeamNumber() && CanCollideWithTeammates();
+	bool bHitEnemy = tr.m_pEnt && tr.m_pEnt->GetTeamNumber() == GetEnemyTeam(GetTeamNumber());
+	bool bHitFriendly = tr.m_pEnt && tr.m_pEnt->GetTeamNumber() == GetTeamNumber();
+
 
 	// Combat items are solid to enemy projectiles and bullets
-	if ( bHitEnemy && tr.m_pEnt->IsCombatItem() )
+	if ( (bHitEnemy || bHitFriendly) && tr.m_pEnt->IsCombatItem() )
 	{
 		if ( IsAllowedToExplode() )
 		{
@@ -756,13 +752,9 @@ void CTFWeaponBaseGrenadeProj::VPhysicsUpdate( IPhysicsObject *pPhysics )
 
 	if ( tr.startsolid )
 	{
-		if ( bHitEnemy )
+		if ((bHitEnemy || bHitFriendly))
 		{
 			Touch( tr.m_pEnt );
-		}
-		else if ( !m_bInSolid && bHitFriendly )
-		{
-			BounceOff( pPhysics );
 		}
 		m_bInSolid = true;
 
@@ -775,7 +767,7 @@ void CTFWeaponBaseGrenadeProj::VPhysicsUpdate( IPhysicsObject *pPhysics )
 	{
 		Touch( tr.m_pEnt );
 		
-		if ( bHitFriendly || bHitEnemy )
+		if ( bHitEnemy )
 		{
 			// reflect velocity around normal
 			vel = -2.0f * tr.plane.normal * DotProduct(vel,tr.plane.normal) + vel;

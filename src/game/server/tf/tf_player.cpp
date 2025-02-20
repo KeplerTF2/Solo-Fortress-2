@@ -8315,10 +8315,12 @@ void CTFPlayer::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, 
 		}
 
 		// Prevent team damage here so blood doesn't appear
+		/*
 		if ( !g_pGameRules->FPlayerCanTakeDamage( this, pAttacker, info ) )
 		{
 			return;
 		}
+		*/
 	}
 
 	// Save this bone for the ragdoll.
@@ -9057,22 +9059,22 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 	}
 
 	// Ignore damagers on our team, to prevent capturing rocket jumping, etc.
-	if ( pAttacker && pAttacker->GetTeam() != GetTeam() )
+	//if ( pAttacker && pAttacker->GetTeam() != GetTeam() )
+	//{
+	m_AchievementData.AddDamagerToHistory( pAttacker );
+	if ( pAttacker->IsPlayer() )
 	{
-		m_AchievementData.AddDamagerToHistory( pAttacker );
-		if ( pAttacker->IsPlayer() )
-		{
-			ToTFPlayer( pAttacker )->m_AchievementData.AddTargetToHistory( this );
+		ToTFPlayer( pAttacker )->m_AchievementData.AddTargetToHistory( this );
 
-			// add to list of damagers via sentry so that later we can check for achievement: ACHIEVEMENT_TF_ENGINEER_SHOTGUN_KILL_PREV_SENTRY_TARGET
-			CBaseEntity *pInflictor = info.GetInflictor();
-			CObjectSentrygun *pSentry = dynamic_cast< CObjectSentrygun * >( pInflictor );
-			if ( pSentry )
-			{
-				m_AchievementData.AddSentryDamager( pAttacker, pInflictor );
-			}
+		// add to list of damagers via sentry so that later we can check for achievement: ACHIEVEMENT_TF_ENGINEER_SHOTGUN_KILL_PREV_SENTRY_TARGET
+		CBaseEntity *pInflictor = info.GetInflictor();
+		CObjectSentrygun *pSentry = dynamic_cast< CObjectSentrygun * >( pInflictor );
+		if ( pSentry )
+		{
+			m_AchievementData.AddSentryDamager( pAttacker, pInflictor );
 		}
 	}
+	//}
 
 	// keep track of amount of damage last sustained
 	m_lastDamageAmount = info.GetDamage();

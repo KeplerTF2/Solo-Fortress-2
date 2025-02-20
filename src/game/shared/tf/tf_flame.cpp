@@ -591,11 +591,6 @@ bool CFlameEntityEnum::EnumEntity( IHandleEntity *pHandleEntity )
 		// add non-player bots
 		m_Targets.AddToTail( pEnt );
 	}
-	else if ( pEnt->IsBaseObject() && m_pShooter->GetTeamNumber() != pEnt->GetTeamNumber() )
-	{
-		// only add enemy objects
-		m_Targets.AddToTail( pEnt );
-	}
 	else if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() && m_pShooter->GetTeamNumber() != pEnt->GetTeamNumber() && FClassnameIs( pEnt, "tf_robot_destruction_robot" ) )
 	{
 		// only add enemy robots
@@ -626,11 +621,6 @@ bool CTFFlameManager::IsValidBurnTarget( CBaseEntity *pEntity ) const
 	else if ( pEntity->MyNextBotPointer() && pEntity->IsAlive() )
 	{
 		// add non-player bots
-		return true;
-	}
-	else if ( pEntity->IsBaseObject() && m_hAttacker->GetTeamNumber() != pEntity->GetTeamNumber() )
-	{
-		// only add enemy objects
 		return true;
 	}
 	else if ( CTFRobotDestructionLogic::GetRobotDestructionLogic() && m_hAttacker->GetTeamNumber() != pEntity->GetTeamNumber() && FClassnameIs( pEntity, "tf_robot_destruction_robot" ) )
@@ -695,110 +685,91 @@ void CTFFlameManager::OnCollide( CBaseEntity *pEnt, int iPointIndex )
 	if ( !BCanBurnEntityThisFrame( pEnt ) )
 		return;
 
-	if ( pEnt->IsPlayer() && pEnt->InSameTeam( pAttacker ) )
+	SetHitTarget();
+
+	int iDamageType = m_iDmgType;
+	CTFPlayer *pVictim = NULL;
+
+	if ( pEnt->IsPlayer() )
 	{
-		CTFPlayer *pPlayer = ToTFPlayer( pEnt );
+		pVictim = ToTFPlayer( pEnt );
 
-		// Only care about Snipers
-		if ( !pPlayer->IsPlayerClass(TF_CLASS_SNIPER) )
-			return;
+		// get direction of touching flame from initial pos to current pos
+		Vector vFlameGeneralDir = ( pFlame->m_vecPosition - pFlame->m_vecInitialPos ).Normalized();
 
-		// Does he have the bow?
-		CTFWeaponBase *pWpn = pPlayer->GetActiveTFWeapon();
-		if ( pWpn && pWpn->GetWeaponID() == TF_WEAPON_COMPOUND_BOW )
+		Vector vOtherForward;
+		AngleVectors( pEnt->GetAbsAngles(), &vOtherForward ); 
+		vOtherForward.z = 0;
+		vOtherForward.NormalizeInPlace();
+
+		const float flBehindThreshold = 0.8f;
+
+		// check if we're behind the victim
+		if ( DotProduct( vFlameGeneralDir, vOtherForward ) > flBehindThreshold )
 		{
-			CTFCompoundBow *pBow = static_cast<CTFCompoundBow*>( pWpn );
-			pBow->SetArrowAlight( true );
-		}
-	}
-	else
-	{
-		SetHitTarget();
-
-		int iDamageType = m_iDmgType;
-		CTFPlayer *pVictim = NULL;
-
-		if ( pEnt->IsPlayer() )
-		{
-			pVictim = ToTFPlayer( pEnt );
-
-			// get direction of touching flame from initial pos to current pos
-			Vector vFlameGeneralDir = ( pFlame->m_vecPosition - pFlame->m_vecInitialPos ).Normalized();
-
-			Vector vOtherForward;
-			AngleVectors( pEnt->GetAbsAngles(), &vOtherForward ); 
-			vOtherForward.z = 0;
-			vOtherForward.NormalizeInPlace();
-
-			const float flBehindThreshold = 0.8f;
-
-			// check if we're behind the victim
-			if ( DotProduct( vFlameGeneralDir, vOtherForward ) > flBehindThreshold )
+			if ( m_bCritFromBehind == true )
 			{
-				if ( m_bCritFromBehind == true )
-				{
-					iDamageType |= DMG_CRITICAL;
-				}
-
-				if ( pVictim )
-				{
-					pVictim->HandleAchievement_Pyro_BurnFromBehind( ToTFPlayer( pAttacker ) );
-				}
+				iDamageType |= DMG_CRITICAL;
 			}
 
-			// Pyro-specific
-			if ( pAttacker->IsPlayer() && pVictim )
+			if ( pVictim )
 			{
-				CTFPlayer *pPlayerAttacker = ToTFPlayer( pAttacker );
-				if ( pPlayerAttacker && pPlayerAttacker->IsPlayerClass( TF_CLASS_PYRO ) )
+				pVictim->HandleAchievement_Pyro_BurnFromBehind( ToTFPlayer( pAttacker ) );
+			}
+		}
+
+		// Pyro-specific
+		if ( pAttacker->IsPlayer() && pVictim )
+		{
+			CTFPlayer *pPlayerAttacker = ToTFPlayer( pAttacker );
+			if ( pPlayerAttacker && pPlayerAttacker->IsPlayerClass( TF_CLASS_PYRO ) )
+			{
+				// burn the victim while taunting?
+				if ( pVictim->m_Shared.InCond( TF_COND_TAUNTING ) )
 				{
-					// burn the victim while taunting?
-					if ( pVictim->m_Shared.InCond( TF_COND_TAUNTING ) )
+					static CSchemaItemDefHandle flipTaunt( "Flippin' Awesome Taunt" );
+					// if I'm the one being flipped, and getting lit on fire
+					if ( !pVictim->IsTauntInitiator() && pVictim->GetTauntEconItemView() && pVictim->GetTauntEconItemView()->GetItemDefinition() == flipTaunt )
 					{
-						static CSchemaItemDefHandle flipTaunt( "Flippin' Awesome Taunt" );
-						// if I'm the one being flipped, and getting lit on fire
-						if ( !pVictim->IsTauntInitiator() && pVictim->GetTauntEconItemView() && pVictim->GetTauntEconItemView()->GetItemDefinition() == flipTaunt )
-						{
-							pPlayerAttacker->AwardAchievement( ACHIEVEMENT_TF_PYRO_IGNITE_PLAYER_BEING_FLIPPED );
-						}
+						pPlayerAttacker->AwardAchievement( ACHIEVEMENT_TF_PYRO_IGNITE_PLAYER_BEING_FLIPPED );
 					}
-
-					pVictim->m_Shared.AddCond( TF_COND_HEALING_DEBUFF, 2.f, pAttacker );
 				}
+
+				pVictim->m_Shared.AddCond( TF_COND_HEALING_DEBUFF, 2.f, pAttacker );
 			}
 		}
-
-		// make sure damage is at least 1
-		float flDamageScale = GetFlameDamageScale( pFlame, pVictim );
-		float flDamage = MAX( flDamageScale * m_flDamage, 1.f );
-		CTakeDamageInfo info( GetOwnerEntity(), pAttacker, GetOwnerEntity(), flDamage, iDamageType, TF_DMG_CUSTOM_BURNING );
-		info.SetReportedPosition( pAttacker->GetAbsOrigin() );
-
-		if ( info.GetDamageType() & DMG_CRITICAL )
-		{
-			info.SetCritType( CTakeDamageInfo::CRIT_FULL );
-		}
-
-		// terrible hack for flames hitting the Merasmus props to get the particle effect in the correct position
-		if ( TFGameRules() && TFGameRules()->GetActiveBoss() && ( TFGameRules()->GetActiveBoss()->GetBossType() == HALLOWEEN_BOSS_MERASMUS ) )
-		{
-			info.SetDamagePosition( GetAbsOrigin() );
-		}
-
-		// Track hits for the Flamethrower, which is used to change the weapon sound based on hit ratio
-		/*if ( m_hFlameThrower )
-		{
-			m_bBurnedEnemy = true;
-			m_hFlameThrower->IncrementFlameDamageCount();
-		}*/
-
-		// We collided with pEnt, so try to find a place on their surface to show blood
-		trace_t pTrace;
-		UTIL_TraceLine( WorldSpaceCenter(), pEnt->WorldSpaceCenter(), MASK_SOLID|CONTENTS_HITBOX, this, COLLISION_GROUP_NONE, &pTrace );
-
-		pEnt->DispatchTraceAttack( info, GetAbsVelocity(), &pTrace );
-		ApplyMultiDamage();
 	}
+
+	// make sure damage is at least 1
+	float flDamageScale = GetFlameDamageScale( pFlame, pVictim );
+	float flDamage = MAX( flDamageScale * m_flDamage, 1.f );
+	CTakeDamageInfo info( GetOwnerEntity(), pAttacker, GetOwnerEntity(), flDamage, iDamageType, TF_DMG_CUSTOM_BURNING );
+	info.SetReportedPosition( pAttacker->GetAbsOrigin() );
+
+	if ( info.GetDamageType() & DMG_CRITICAL )
+	{
+		info.SetCritType( CTakeDamageInfo::CRIT_FULL );
+	}
+
+	// terrible hack for flames hitting the Merasmus props to get the particle effect in the correct position
+	if ( TFGameRules() && TFGameRules()->GetActiveBoss() && ( TFGameRules()->GetActiveBoss()->GetBossType() == HALLOWEEN_BOSS_MERASMUS ) )
+	{
+		info.SetDamagePosition( GetAbsOrigin() );
+	}
+
+	// Track hits for the Flamethrower, which is used to change the weapon sound based on hit ratio
+	/*if ( m_hFlameThrower )
+	{
+		m_bBurnedEnemy = true;
+		m_hFlameThrower->IncrementFlameDamageCount();
+	}*/
+
+	// We collided with pEnt, so try to find a place on their surface to show blood
+	trace_t pTrace;
+	UTIL_TraceLine( WorldSpaceCenter(), pEnt->WorldSpaceCenter(), MASK_SOLID|CONTENTS_HITBOX, this, COLLISION_GROUP_NONE, &pTrace );
+
+	pEnt->DispatchTraceAttack( info, GetAbsVelocity(), &pTrace );
+	ApplyMultiDamage();
 
 	// add ent to burn list
 	if ( iEntIndex != m_mapEntitiesBurnt.InvalidIndex() )

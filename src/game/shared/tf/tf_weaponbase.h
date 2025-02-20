@@ -133,12 +133,15 @@ public:
 
 	virtual bool ShouldHitEntity( IHandleEntity *pServerEntity, int contentsMask )
 	{
+		/*
 		CBaseEntity *pEntity = EntityFromEntityHandle( pServerEntity );
 
+		/*
 		if ( ( pEntity->IsPlayer() || pEntity->IsCombatItem() ) && ( pEntity->GetTeamNumber() == m_iIgnoreTeam || m_iIgnoreTeam == TEAM_ANY ) )
 		{
 			return false;
 		}
+		*/
 
 		return BaseClass::ShouldHitEntity( pServerEntity, contentsMask );
 	}
@@ -190,8 +193,8 @@ public:
 
 		if ( pEntity->IsCombatItem() )
 		{
-			if ( pEntity->GetTeamNumber() == m_iIgnoreTeam )
-				return false;
+			//if ( pEntity->GetTeamNumber() == m_iIgnoreTeam )
+			//	return false;
 
 			// If source is a enemy projectile, be explicit, otherwise we fail a "IsTransparent" test downstream
 			if ( m_bCallerIsProjectile )

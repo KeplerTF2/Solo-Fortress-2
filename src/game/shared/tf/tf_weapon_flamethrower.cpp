@@ -400,17 +400,7 @@ bool CTFFlameThrower::CanAirBlastDeflectProjectile() const
 
 bool CTFFlameThrower::CanAirBlastPutOutTeammate() const
 {
-	CTFPlayer *pOwner = GetTFPlayerOwner();
-	if ( !pOwner )
-		return false;
-
-	if ( !CanAirBlast() )
-		return false;
-
-	int iPutOutTeammateDisabled = 0;
-	CALL_ATTRIB_HOOK_INT( iPutOutTeammateDisabled, airblast_put_out_teammate_disabled );
-
-	return ( iPutOutTeammateDisabled == 0 );
+	return false;
 }
 
 //-----------------------------------------------------------------------------
@@ -1614,49 +1604,7 @@ void CTFFlameThrower::ComputeCrayAirBlastForce( CTFPlayer *pTarget, CTFPlayer *p
 // Purpose: 
 //-----------------------------------------------------------------------------
 bool CTFFlameThrower::DeflectPlayer( CTFPlayer *pTarget, CTFPlayer *pOwner, Vector &vecForward )
-{
-	if ( pTarget->GetTeamNumber() == pOwner->GetTeamNumber() && pTarget != pOwner )
-	{
-		if ( pTarget->m_Shared.InCond( TF_COND_BURNING ) && CanAirBlastPutOutTeammate() )
-		{
-			ExtinguishPlayer( this, pOwner, pTarget, "tf_weapon_flamethrower" );
-
-			// Return health to the Pyro. 
-			// We may want to cap the amount of health per extinguish but for now lets test this
-			int iRestoreHealthOnExtinguish = 0;
-			CALL_ATTRIB_HOOK_INT( iRestoreHealthOnExtinguish, extinguish_restores_health );
-			if ( iRestoreHealthOnExtinguish > 0 )
-			{
-				pOwner->TakeHealth( iRestoreHealthOnExtinguish, DMG_GENERIC );
-				IGameEvent *healevent = gameeventmanager->CreateEvent( "player_healonhit" );
-				if ( healevent )
-				{
-					healevent->SetInt( "amount", iRestoreHealthOnExtinguish );
-					healevent->SetInt( "entindex", pOwner->entindex() );
-					item_definition_index_t healingItemDef = INVALID_ITEM_DEF_INDEX;
-					if ( GetAttributeContainer() && GetAttributeContainer()->GetItem() )
-					{
-						healingItemDef = GetAttributeContainer()->GetItem()->GetItemDefIndex();
-					}
-					healevent->SetInt( "weapon_def_index", healingItemDef );
-
-					gameeventmanager->FireEvent( healevent ); 
-				}
-			}
-		}
-
-		float flGiveTeammateSpeedBoost = 0;
-		CALL_ATTRIB_HOOK_FLOAT( flGiveTeammateSpeedBoost, airblast_give_teammate_speed_boost );
-		if ( flGiveTeammateSpeedBoost > 0.f )
-		{
-			pTarget->m_Shared.AddCond( TF_COND_SPEED_BOOST, flGiveTeammateSpeedBoost );
-			// give the owner extra time to catch up with faster class
-			pOwner->m_Shared.AddCond( TF_COND_SPEED_BOOST, flGiveTeammateSpeedBoost + 1.f );
-		}
-
-		return false;
-	}
-	
+{	
 	if ( CanAirBlastPushPlayer() )
 	{
 		if ( pTarget->m_Shared.IsImmuneToPushback() )
@@ -1911,10 +1859,8 @@ bool CTFFlameThrower::DeflectEntity( CBaseEntity *pTarget, CTFPlayer *pOwner, Ve
 	if ( !CanAirBlastDeflectProjectile() )
 		return false;
 
-	// can't deflect things on our own team
-	// except the passtime ball when in passtime mode
-	if ( (pTarget->GetTeamNumber() == pOwner->GetTeamNumber()) 
-		&& !(g_pPasstimeLogic && (g_pPasstimeLogic->GetBall() == pTarget)) )
+	// can't deflect things our own projectiles
+	if ( (pTarget == pOwner)  )
 	{
 		return false;
 	}
@@ -2940,14 +2886,7 @@ void CTFFlameEntity::FlameThink( void )
 			}
 
 			// burn them all!
-			if ( pEnt->IsPlayer() && pEnt->InSameTeam( pAttacker ) )
-			{
-				OnCollideWithTeammate( ToTFPlayer( pEnt ) );
-			}
-			else
-			{
-				OnCollide( pEnt );
-			}
+			OnCollide( pEnt );
 
 			bHitSomething = true;
 		}

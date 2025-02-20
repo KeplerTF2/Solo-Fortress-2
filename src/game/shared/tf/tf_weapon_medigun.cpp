@@ -561,6 +561,8 @@ bool CWeaponMedigun::HealingTarget( CBaseEntity *pTarget )
 //-----------------------------------------------------------------------------
 bool CWeaponMedigun::AllowedToHealTarget( CBaseEntity *pTarget )
 {
+	// Medics can only heal themselves
+	/*
 	CTFPlayer *pOwner = ToTFPlayer( GetOwnerEntity() );
 	if ( !pOwner )
 		return false;
@@ -612,8 +614,9 @@ bool CWeaponMedigun::AllowedToHealTarget( CBaseEntity *pTarget )
 			return true;
 		}
 	}
+	*/
 
-	return false;
+	return true;
 }
 
 // Now make sure there isn't something other than team players in the way.
@@ -720,7 +723,22 @@ void CWeaponMedigun::FindNewTargetForSlot()
 	{
 		RemoveHealingTarget();
 	}
+	else
+	{
 
+		// Heal ourselves if we weren't previously
+
+#ifdef GAME_DLL
+		pOwner->SpeakConceptIfAllowed(MP_CONCEPT_MEDIC_STARTEDHEALING);
+
+		// Start the heal target thinking.
+		SetContextThink(&CWeaponMedigun::HealTargetThink, gpGlobals->curtime, s_pszMedigunHealTargetThink);
+#endif
+		m_hHealingTarget.Set(pOwner);
+		m_flNextTargetCheckTime = gpGlobals->curtime + 1.0f;
+	}
+
+	/*
 	// In Normal mode, we heal players under our crosshair
 	Vector vecAiming;
 	pOwner->EyeVectors( &vecAiming );
@@ -749,6 +767,7 @@ void CWeaponMedigun::FindNewTargetForSlot()
 			m_flNextTargetCheckTime = gpGlobals->curtime + 1.0f;
 		}			
 	}
+	*/
 }
 
 //-----------------------------------------------------------------------------

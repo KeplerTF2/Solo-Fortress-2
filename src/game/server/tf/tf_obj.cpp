@@ -1627,23 +1627,28 @@ void CBaseObject::SetHealth( float flHealth )
 //-----------------------------------------------------------------------------
 void CBaseObject::TraceAttack( const CTakeDamageInfo &inputInfo, const Vector &vecDir, trace_t *ptr, CDmgAccumulator *pAccumulator )
 {
-	// Prevent team damage here so blood doesn't appear
+	// Prevent owner damage here so blood doesn't appear
 	if ( inputInfo.GetAttacker() )
 	{
-		if ( InSameTeam(inputInfo.GetAttacker()) )
+		CTFPlayer* pBuilder = GetBuilder();
+		if (pBuilder)
 		{
-			// Pass Damage to enemy attachments
-			int iNumObjects = GetNumObjectsOnMe();
-			for ( int iPoint=iNumObjects-1;iPoint >= 0; --iPoint )
+			if (inputInfo.GetAttacker() == pBuilder)
 			{
-				CBaseObject *pObject = GetBuildPointObject( iPoint );
 
-				if ( pObject && pObject->IsHostileUpgrade() )
+				// Pass Damage to enemy attachments
+				int iNumObjects = GetNumObjectsOnMe();
+				for (int iPoint = iNumObjects - 1; iPoint >= 0; --iPoint)
 				{
-					pObject->TraceAttack(inputInfo, vecDir, ptr, pAccumulator );
+					CBaseObject* pObject = GetBuildPointObject(iPoint);
+
+					if (pObject && pObject->IsHostileUpgrade())
+					{
+						pObject->TraceAttack(inputInfo, vecDir, ptr, pAccumulator);
+					}
 				}
+				return;
 			}
-			return;
 		}
 	}
 
@@ -1868,11 +1873,16 @@ int CBaseObject::OnTakeDamage( const CTakeDamageInfo &info )
 	if ( IsPlacing() )
 		return 0;
 
-	// Check teams
+	// Check owner
 	if ( info.GetAttacker() )
 	{
-		if ( InSameTeam(info.GetAttacker()) )
-			return 0;
+		CTFPlayer* pBuilder = GetBuilder();
+
+		if (pBuilder)
+		{
+			if (info.GetAttacker() == pBuilder)
+				return 0;
+		}
 
 		if ( TFGameRules() && TFGameRules()->IsTruceActive() )
 		{

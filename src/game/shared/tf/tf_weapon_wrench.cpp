@@ -106,6 +106,10 @@ void CTFWrench::OnFriendlyBuildingHit( CBaseObject *pObject, CTFPlayer *pPlayer,
 {
 	bool bHelpTeammateBuildStructure = pObject->IsBuilding() && pObject->GetOwner() != GetOwner();
 
+	// We don't want to help friendly buildings that aren't our own
+	if (bHelpTeammateBuildStructure)
+		return;
+
 	// Did this object hit do any work? repair or upgrade?
 	bool bUsefulHit = pObject->InputWrenchHit( pPlayer, this, hitLoc );
 
@@ -179,17 +183,24 @@ void CTFWrench::Smack( void )
 	// We hit, setup the smack.
 	if ( trace.fraction < 1.0f &&
 		 trace.m_pEnt &&
-		 trace.m_pEnt->IsBaseObject() &&
-		 trace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber() )
+		 trace.m_pEnt->IsBaseObject())
 	{
+		if (dynamic_cast<CBaseObject*>(trace.m_pEnt)->GetBuilder() == pPlayer)
+		{
 #ifdef GAME_DLL
-		OnFriendlyBuildingHit( dynamic_cast< CBaseObject * >( trace.m_pEnt ), pPlayer, trace.endpos );
+			OnFriendlyBuildingHit(dynamic_cast<CBaseObject*>(trace.m_pEnt), pPlayer, trace.endpos);
 #else
-		// NVNT if the local player is the owner of this wrench 
-		//   Notify the haptics system we just repaired something.
-		if(pPlayer==C_TFPlayer::GetLocalTFPlayer() && haptics)
-			haptics->ProcessHapticEvent(2,"Weapons","tf_weapon_wrench_fix");
+			// NVNT if the local player is the owner of this wrench 
+			//   Notify the haptics system we just repaired something.
+			if (pPlayer == C_TFPlayer::GetLocalTFPlayer() && haptics)
+				haptics->ProcessHapticEvent(2, "Weapons", "tf_weapon_wrench_fix");
 #endif
+		}
+		else
+		{
+			// if we cannot, Smack as usual for player hits
+			BaseClass::Smack();
+		}
 	}
 	else
 	{

@@ -265,15 +265,6 @@ public:
 		CTFPlayer* pTFOwner = ToTFPlayer( pOwner );
 		CTFPlayer *pTFPlayer = ToTFPlayer( pTarget );
 		
-		if ( pOwner->InSameTeam( pTarget ) )
-		{
-			if ( pTFPlayer )
-			{
-				OnCollideWithTeammate( pTFPlayer );
-			}
-			return;
-		}
-		
 		int nEntIndex = pTarget->entindex();
 		if ( m_vecHitPlayers.Find( nEntIndex ) != m_vecHitPlayers.InvalidIndex() )
 			return;
@@ -302,9 +293,8 @@ public:
 			info.SetDamageType( info.GetDamageType() | DMG_CRITICAL );
 		}
 
-		CTraceFilterIgnoreTeammates tracefilter( this, COLLISION_GROUP_NONE, GetTeamNumber() );
 		trace_t trace;
-		UTIL_TraceLine( GetAbsOrigin(), pTarget->GetAbsOrigin(), ( MASK_SHOT & ~( CONTENTS_HITBOX ) ), &tracefilter, &trace );
+		UTIL_TraceLine( GetAbsOrigin(), pTarget->GetAbsOrigin(), ( MASK_SHOT & ~( CONTENTS_HITBOX ) ), NULL, &trace );
 		if ( trace.DidHitWorld() )
 			return;
 

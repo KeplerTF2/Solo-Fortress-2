@@ -331,7 +331,7 @@ void CTFBaseRocket::RocketTouch( CBaseEntity *pOther )
 {
 	// Verify a correct "other."
 	Assert( pOther );
-	bool bShield = pOther->IsCombatItem() && !InSameTeam( pOther );
+	bool bShield = pOther->IsCombatItem();
 	if ( pOther->IsSolidFlagSet( FSOLID_TRIGGER | FSOLID_VOLUME_CONTENTS ) && !bShield )
 		return;
 
@@ -355,16 +355,8 @@ unsigned int CTFBaseRocket::PhysicsSolidMaskForEntity( void ) const
 { 
 	int teamContents = 0;
 
-	if ( !CanCollideWithTeammates() )
-	{
-		// Only collide with the other team
-		teamContents = ( GetTeamNumber() == TF_TEAM_RED ) ? CONTENTS_BLUETEAM : CONTENTS_REDTEAM;
-	}
-	else
-	{
-		// Collide with both teams
-		teamContents = CONTENTS_REDTEAM | CONTENTS_BLUETEAM;
-	}
+	// Collide with both teams
+	teamContents = CONTENTS_REDTEAM | CONTENTS_BLUETEAM;
 
 	return BaseClass::PhysicsSolidMaskForEntity() | teamContents;
 }
@@ -588,7 +580,7 @@ float CTFBaseRocket::GetRadius()
 		CALL_ATTRIB_HOOK_INT_ON_OTHER( pAttacker, iRocketSpecialist, rocket_specialist );
 		if ( iRocketSpecialist )
 		{
-			bool bDirectHit = ( GetEnemy() && GetEnemy()->GetTeamNumber() != pAttacker->GetTeamNumber() && 
+			bool bDirectHit = ( GetEnemy() && GetEnemy() != pAttacker && 
 								( GetEnemy()->IsPlayer() || GetEnemy()->MyCombatCharacterPointer() ) );
 			// If we have the Rocket Specialist attribute and hit an enemy combatant directly...
 			if ( bDirectHit )

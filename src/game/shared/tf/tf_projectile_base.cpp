@@ -184,13 +184,6 @@ CTFBaseProjectile *CTFBaseProjectile::Create( const char *pszClassname, const Ve
 		CTraceFilterSimple traceFilter( pOwner, COLLISION_GROUP_NONE );
 		ITraceFilter *pFilterChain = NULL;
 
-		CTraceFilterIgnoreFriendlyCombatItems traceFilterCombatItem( pOwner, COLLISION_GROUP_NONE, pOwner->GetTeamNumber() );
-		if ( TFGameRules() && TFGameRules()->GameModeUsesUpgrades() )
-		{
-			// Ignore teammates and their (physical) upgrade items in MvM
-			pFilterChain = &traceFilterCombatItem;
-		}
-
 		CTraceFilterChain traceFilterChain( &traceFilter, pFilterChain );
 		UTIL_TraceLine( vecOrigin, vecOrigin + vecForward * MAX_COORD_RANGE, (CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_WINDOW|CONTENTS_GRATE), &traceFilterChain, &tr );
 
@@ -451,7 +444,7 @@ void CTFBaseProjectile::ProjectileTouch( CBaseEntity *pOther )
 		{
 			CTFPlayer *pTFVictim = ToTFPlayer( pOther );
 			CTFPlayer *pTFOwner = ToTFPlayer( GetOwnerEntity() );
-			if ( pTFVictim && pTFOwner && pTFVictim->GetTeamNumber() != pTFOwner->GetTeamNumber() )
+			if ( pTFVictim && pTFOwner && pTFVictim != pTFOwner )
 			{
 				pTFVictim->m_Shared.AddCond( TF_COND_MAD_MILK, 1.f, pTFOwner );
 			}

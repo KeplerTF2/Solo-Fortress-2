@@ -5657,26 +5657,7 @@ void CTFWeaponBase::GetProjectileFireSetup( CTFPlayer *pPlayer, Vector vecOffset
 	// Trace forward and find what's in front of us, and aim at that
 	trace_t tr;
 
-	if ( bHitTeammates )
-	{
-		CTraceFilterSimple traceFilter( pPlayer, COLLISION_GROUP_NONE );
-		ITraceFilter *pFilterChain = NULL;
-
-		CTraceFilterIgnoreFriendlyCombatItems traceFilterCombatItem( pPlayer, COLLISION_GROUP_NONE, GetTeamNumber() );
-		if ( TFGameRules() && TFGameRules()->GameModeUsesUpgrades() )
-		{
-			// Ignore teammates and their (physical) upgrade items in MvM
-			pFilterChain = &traceFilterCombatItem;
-		}
-
-		CTraceFilterChain traceFilterChain( &traceFilter, pFilterChain );
-		UTIL_TraceLine( vecShootPos, endPos, MASK_SOLID, &traceFilterChain, &tr );
-	}
-	else
-	{
-		CTraceFilterIgnoreTeammates filter( pPlayer, COLLISION_GROUP_NONE, pPlayer->GetTeamNumber() );
-		UTIL_TraceLine( vecShootPos, endPos, MASK_SOLID, &filter, &tr );
-	}
+	UTIL_TraceLine( vecShootPos, endPos, MASK_SOLID, NULL, &tr );
 
 	// Offset actual start point
 	*vecSrc = vecShootPos + (vecForward * vecOffset.x) + (vecRight * vecOffset.y) + (vecUp * vecOffset.z);
@@ -5810,7 +5791,6 @@ bool CTFWeaponBase::DeflectProjectiles()
 	bool bDeflected = false;
 	bool bDeflectedPlayer = false;
 
-	int iEnemyTeam = GetEnemyTeam( pOwner->GetTeamNumber() );
 	bool bTruce = TFGameRules() && TFGameRules()->IsTruceActive() && pOwner->IsTruceValidForEnt();
 
 	for ( int i = 0; i < count; i++ )
@@ -5824,7 +5804,7 @@ bool CTFWeaponBase::DeflectProjectiles()
 		if ( pOwner->FVisible( pObjects[i], MASK_SOLID ) == false )
 			continue;
 
-		if ( bTruce && ( pObjects[i]->GetTeamNumber() == iEnemyTeam ) )
+		if ( bTruce )
 			continue;
 
 		if ( !pObjects[i]->IsDeflectable() && !FClassnameIs( pObjects[i], "prop_physics" ) )
@@ -5880,6 +5860,7 @@ public:
 
 	virtual bool ShouldHitEntity( IHandleEntity *passentity, int contentsMask ) OVERRIDE
 	{
+		/*
 		CBaseEntity *pEntity = EntityFromEntityHandle( passentity );
 		if ( !pEntity )
 			return false;
@@ -5892,6 +5873,7 @@ public:
 
 		if ( pEntity->IsCombatItem() )
 			return false;
+		*/
 
 		return BaseClass::ShouldHitEntity( passentity, contentsMask );
 	}

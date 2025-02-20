@@ -446,12 +446,6 @@ bool CTFWeaponBaseMelee::DoSwingTraceInternal( trace_t &trace, bool bCleave, CUt
 				continue;
 			}
 
-			if ( bDontHitTeammates && pTarget->GetTeamNumber() == pPlayer->GetTeamNumber() )
-			{
-				// don't hit teammate
-				continue;
-			}
-
 			if ( pTargetTraceVector )
 			{
 				trace_t tr;
@@ -483,7 +477,7 @@ bool CTFWeaponBaseMelee::DoSwingTraceInternal( trace_t &trace, bool bCleave, CUt
 			if ( trace.fraction < 1.0f &&
 				 trace.m_pEnt &&
 				 trace.m_pEnt->IsBaseObject() &&
-				 trace.m_pEnt->GetTeamNumber() == pPlayer->GetTeamNumber() )
+				 trace.m_pEnt->GetOwnerEntity() == pPlayer )
 			{
 				CBaseObject *pObject = static_cast< CBaseObject* >( trace.m_pEnt );
 				if ( pObject->HasSapper() )
@@ -618,29 +612,26 @@ bool CTFWeaponBaseMelee::OnSwingHit( trace_t &trace )
 			g_pPasstimeLogic->OnBallCarrierMeleeHit( pTargetPlayer, pPlayer );
 		}
 
-		if ( pPlayer->GetTeamNumber() != pTargetPlayer->GetTeamNumber() )
+		bHitEnemyPlayer = true;
+
+		if ( TFGameRules()->IsIT( pPlayer ) )
 		{
-			bHitEnemyPlayer = true;
-
-			if ( TFGameRules()->IsIT( pPlayer ) )
+			IGameEvent *pEvent = gameeventmanager->CreateEvent( "tagged_player_as_it" );
+			if ( pEvent )
 			{
-				IGameEvent *pEvent = gameeventmanager->CreateEvent( "tagged_player_as_it" );
-				if ( pEvent )
-				{
-					pEvent->SetInt( "player", pPlayer->GetUserID() );
-					gameeventmanager->FireEvent( pEvent, true );
-				}
-
-				// Tag! You're IT!
-				TFGameRules()->SetIT( pTargetPlayer );
-
-				pPlayer->SpeakConceptIfAllowed( MP_CONCEPT_PLAYER_YES );
-
-				UTIL_ClientPrintAll( HUD_PRINTTALK, "#TF_HALLOWEEN_BOSS_ANNOUNCE_TAG", pPlayer->GetPlayerName(), pTargetPlayer->GetPlayerName() );
-
-				CSingleUserReliableRecipientFilter filter( pPlayer );
-				pPlayer->EmitSound( filter, pPlayer->entindex(), "Player.TaggedOtherIT" );
+				pEvent->SetInt( "player", pPlayer->GetUserID() );
+				gameeventmanager->FireEvent( pEvent, true );
 			}
+
+			// Tag! You're IT!
+			TFGameRules()->SetIT( pTargetPlayer );
+
+			pPlayer->SpeakConceptIfAllowed( MP_CONCEPT_PLAYER_YES );
+
+			UTIL_ClientPrintAll( HUD_PRINTTALK, "#TF_HALLOWEEN_BOSS_ANNOUNCE_TAG", pPlayer->GetPlayerName(), pTargetPlayer->GetPlayerName() );
+
+			CSingleUserReliableRecipientFilter filter( pPlayer );
+			pPlayer->EmitSound( filter, pPlayer->entindex(), "Player.TaggedOtherIT" );
 		}
 
 		if ( pTargetPlayer->InSameTeam( pPlayer ) || pTargetPlayer->m_Shared.GetDisguiseTeam() == GetTeamNumber() )
@@ -887,7 +878,7 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity* ent, trace_t& trace, float 
 		{
 			CTFPlayer *pVictimPlayer = ToTFPlayer( ent );
 
-			if ( pVictimPlayer && pVictimPlayer->CanBeForcedToLaugh() && ( pPlayer->GetTeamNumber() != pVictimPlayer->GetTeamNumber() ) )
+			if ( pVictimPlayer && pVictimPlayer->CanBeForcedToLaugh() )
 			{
 				// force victim to laugh!
 				pVictimPlayer->Taunt( TAUNT_MISC_ITEM, MP_CONCEPT_TAUNT_LAUGH );
@@ -906,7 +897,7 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity* ent, trace_t& trace, float 
 		{
 			CTFPlayer *pVictimPlayer = ToTFPlayer( ent );
 
-			if ( pVictimPlayer && pVictimPlayer->CanBeForcedToLaugh() && ( pPlayer->GetTeamNumber() != pVictimPlayer->GetTeamNumber() ) )
+			if ( pVictimPlayer && pVictimPlayer->CanBeForcedToLaugh() )
 			{
 				CTFWeaponBase *myWeapon = pPlayer->GetActiveTFWeapon();
 				CTFWeaponBase *theirWeapon = pVictimPlayer->GetActiveTFWeapon();
@@ -929,7 +920,7 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity* ent, trace_t& trace, float 
 	{
 		CTFPlayer *pVictimPlayer = ToTFPlayer( ent );
 
-		if ( pVictimPlayer && !pVictimPlayer->InSameTeam( pPlayer ) )
+		if ( pVictimPlayer )
 		{
 			CPASAttenuationFilter filter( pPlayer );
 			Vector origin = pPlayer->GetAbsOrigin();
@@ -956,8 +947,8 @@ void CTFWeaponBaseMelee::DoMeleeDamage( CBaseEntity* ent, trace_t& trace, float 
 	}
 
 #endif
-	// Don't impact trace friendly players or objects
-	if ( ent && ent->GetTeamNumber() != pPlayer->GetTeamNumber() )
+	// Don't impact trace objects
+	if ( ent )
 	{
 #ifdef CLIENT_DLL
 		UTIL_ImpactTrace( &trace, DMG_CLUB );

@@ -2111,10 +2111,12 @@ void CBaseEntity::DispatchTraceAttack( const CTakeDamageInfo &info, const Vector
 {
 #ifdef GAME_DLL
 	// Make sure our damage filter allows the damage.
+	/*
 	if ( !PassesDamageFilter( info ))
 	{
 		return;
 	}
+	*/
 #endif
 
 	TraceAttack( info, vecDir, ptr, pAccumulator );

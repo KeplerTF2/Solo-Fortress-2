@@ -806,9 +806,11 @@ bool CObjectSentrygun::FindTarget()
 	Vector vecSentryOrigin = EyePosition();
 
 	// find the enemy team
-	int iEnemyTeam = ( GetTeamNumber() == TF_TEAM_BLUE ) ? TF_TEAM_RED : TF_TEAM_BLUE;
-	CTFTeam *pTeam = TFTeamMgr()->GetTeam( iEnemyTeam );
-	if ( !pTeam )
+	int iRedTeam = TF_TEAM_RED;
+	int iBluTeam = TF_TEAM_BLUE;
+	CTFTeam* pRedTeam = TFTeamMgr()->GetTeam(iRedTeam);
+	CTFTeam* pBluTeam = TFTeamMgr()->GetTeam(iBluTeam);
+	if (!(pRedTeam || pBluTeam))
 		return false;
 
 	// If we have an enemy get his minimum distance to check against.
@@ -837,8 +839,6 @@ bool CObjectSentrygun::FindTarget()
 			for ( int i = 0; i < ITFTargetDummy::AutoList().Count(); ++i )
 			{
 				pDummy = static_cast<CTFTargetDummy*>( ITFTargetDummy::AutoList()[i] );
-				if ( InSameTeam( pDummy ) )
-					continue;
 
 				vecTargetCenter = pDummy->GetAbsOrigin();
 				vecTargetCenter += pDummy->GetViewOffset();
@@ -887,7 +887,7 @@ bool CObjectSentrygun::FindTarget()
 					GetAttachment( GetFireAttachment(), vecSrc, vecAng );
 					Vector vecEnemy = GetEnemyAimPosition( m_hAutoAimTarget );
 					trace_t	trace;
-					CTraceFilterIgnoreTeammatesAndTeamObjects filter( pBuilder, COLLISION_GROUP_NONE, pBuilder->GetTeamNumber() );
+					CTraceFilterIgnoreTeammatesAndTeamObjects filter( pBuilder, COLLISION_GROUP_NONE, -1 );
 					UTIL_TraceLine( vecSrc, vecEnemy, MASK_SOLID, &filter, &trace );
 					if ( trace.m_pEnt == m_hAutoAimTarget )
 					{
@@ -931,10 +931,20 @@ bool CObjectSentrygun::FindTarget()
 	{
 		// Sentries will try to target players first, then objects.  However, if the enemy held was an object it will continue
 		// to try and attack it first.
-		int nTeamCount = pTeam->GetNumPlayers();
+		int nRedCount = pRedTeam->GetNumPlayers();
+		int nBluCount = pBluTeam->GetNumPlayers();
+		int nTeamCount = nRedCount + nBluCount;
 		for ( int iPlayer = 0; iPlayer < nTeamCount; ++iPlayer )
 		{
-			CTFPlayer *pTargetPlayer = static_cast<CTFPlayer*>( pTeam->GetPlayer( iPlayer ) );
+			CTFPlayer* pTargetPlayer;
+
+			// Go through red team
+			if (iPlayer < nRedCount)
+				pTargetPlayer = static_cast<CTFPlayer*>(pRedTeam->GetPlayer(iPlayer));
+			// Go through blu team
+			else
+				pTargetPlayer = static_cast<CTFPlayer*>(pBluTeam->GetPlayer(iPlayer - nRedCount));
+
 			if ( pTargetPlayer == NULL )
 				continue;
 
@@ -944,6 +954,13 @@ bool CObjectSentrygun::FindTarget()
 
 			if ( pTargetPlayer->GetFlags() & FL_NOTARGET )
 				continue;
+
+			if (pBuilder)
+			{
+				// Don't target the builder of the sentry
+				if (pTargetPlayer == pBuilder)
+					continue;
+			}
 
 			vecTargetCenter = pTargetPlayer->GetAbsOrigin();
 			vecTargetCenter += pTargetPlayer->GetViewOffset();
@@ -998,11 +1015,26 @@ bool CObjectSentrygun::FindTarget()
 		if ( ( pTargetCurrent == NULL ) && !bTruceActive )
 		{
 			// target objects
-			int nTeamObjectCount = pTeam->GetNumObjects();
+			int nRedObjectCount = pRedTeam->GetNumObjects();
+			int nBluObjectCount = pBluTeam->GetNumObjects();
+			int nTeamObjectCount = nRedObjectCount + nBluObjectCount;
 			for ( int iObject = 0; iObject < nTeamObjectCount; ++iObject )
 			{
-				CBaseObject *pTargetObject = pTeam->GetObject( iObject );
+				CBaseObject *pTargetObject;
+
+				// Go through red team
+				if (iObject < nRedObjectCount)
+					pTargetObject = pRedTeam->GetObject(iObject);
+				// Go through blu team
+				else
+					pTargetObject = pBluTeam->GetObject(iObject - nRedObjectCount);
+
 				if ( !pTargetObject )
+					continue;
+
+				// Don't target the building if the builder is the same as ours
+				CTFPlayer* pOtherBuilder = pTargetObject->GetBuilder();
+				if (pOtherBuilder == pBuilder)
 					continue;
 
 				vecTargetCenter = pTargetObject->GetAbsOrigin();
@@ -1117,8 +1149,8 @@ bool CObjectSentrygun::ValidTargetBot( CBaseCombatCharacter *pBot, const Vector 
 	if ( pBot->IsPlayer() )
 		return false;
 
-	// Don't want to shoot bots that are dead, on the same team, or aren't solid (they won't take damage anyway)
-	if  ( !pBot->IsAlive() || pBot->InSameTeam( this ) || pBot->IsSolidFlagSet( FSOLID_NOT_SOLID ) )
+	// Don't want to shoot bots that are dead, or aren't solid (they won't take damage anyway)
+	if  ( !pBot->IsAlive() || pBot->IsSolidFlagSet( FSOLID_NOT_SOLID ) )
 		return false;
 
 	// Not across water boundary.

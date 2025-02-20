@@ -298,6 +298,7 @@ bool CObjectDispenser::StartBuilding( CBaseEntity *pBuilder )
 void CObjectDispenser::SetStartBuildingModel( void )
 {
 	SetModel( GetBuildingModel( 1 ) );
+	GetBaseAnimating()->SetPlaybackRate(2.0);
 }
 
 //-----------------------------------------------------------------------------
@@ -913,16 +914,11 @@ bool CObjectDispenser::CouldHealTarget( CBaseEntity *pTarget )
 		if ( pTFPlayer->IsInPurgatory() )
 			return false;
 
-		// don't heal enemies unless they are disguised as our team
-		int iTeam = GetTeamNumber();
-		int iPlayerTeam = pTFPlayer->GetTeamNumber();
+		// don't heal enemies unless they are disguised
+		bool bIsPlayerDisguised = pTFPlayer->m_Shared.InCond(TF_COND_DISGUISED);
+		CTFPlayer* pBuilder = GetOwner();
 
-		if ( iPlayerTeam != iTeam && pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
-		{
-			iPlayerTeam = pTFPlayer->m_Shared.GetDisguiseTeam();
-		}
-
-		if ( iPlayerTeam != iTeam )
+		if (pTFPlayer != pBuilder && !bIsPlayerDisguised)
 		{
 			return false;
 		}
@@ -931,13 +927,6 @@ bool CObjectDispenser::CouldHealTarget( CBaseEntity *pTarget )
 		{
 			// if they're invis, no heals
 			if ( pTFPlayer->m_Shared.IsStealthed() )
-			{
-				return false;
-			}
-
-			// if they're disguised as enemy
-			if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) &&
-				 pTFPlayer->m_Shared.GetDisguiseTeam() != iTeam )
 			{
 				return false;
 			}

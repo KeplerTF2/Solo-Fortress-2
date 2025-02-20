@@ -9768,19 +9768,16 @@ bool CTFGameRules::FPlayerCanTakeDamage( CBasePlayer *pPlayer, CBaseEntity *pAtt
 	if ( !pPlayer || !pAttacker )
 		return false;
 
-	if ( IsTruceActive() && ( pPlayer != pAttacker ) && ( pPlayer->GetTeamNumber() != pAttacker->GetTeamNumber() ) )
+	if ( IsTruceActive() && ( pPlayer != pAttacker ) )
 	{
-		if ( ( ( pAttacker->GetTeamNumber() == TF_TEAM_RED ) && ( pPlayer->GetTeamNumber() == TF_TEAM_BLUE ) ) || ( ( pAttacker->GetTeamNumber() == TF_TEAM_BLUE ) && ( pPlayer->GetTeamNumber() == TF_TEAM_RED ) ) )
+		CBaseEntity *pInflictor = info.GetInflictor();
+		if ( pInflictor )
 		{
-			CBaseEntity *pInflictor = info.GetInflictor();
-			if ( pInflictor )
-			{
-				return !( pInflictor->IsTruceValidForEnt() || pAttacker->IsTruceValidForEnt() );
-			}
-			else
-			{
-				return !pAttacker->IsTruceValidForEnt();
-			}
+			return !( pInflictor->IsTruceValidForEnt() || pAttacker->IsTruceValidForEnt() );
+		}
+		else
+		{
+			return !pAttacker->IsTruceValidForEnt();
 		}
 	}
 
@@ -9789,6 +9786,8 @@ bool CTFGameRules::FPlayerCanTakeDamage( CBasePlayer *pPlayer, CBaseEntity *pAtt
 	{
 		CBaseObject *pObj = ( CBaseObject *)pAttacker;
 
+		return true;
+		/*
 		if ( pObj->GetBuilder() == pPlayer || pPlayer->GetTeamNumber() != pObj->GetTeamNumber() )
 		{
 			// Builder and enemies
@@ -9799,23 +9798,28 @@ bool CTFGameRules::FPlayerCanTakeDamage( CBasePlayer *pPlayer, CBaseEntity *pAtt
 			// Teammates of the builder
 			return false;
 		}
+		*/
 	}
 
 	// prevent eyeball rockets from hurting teammates if it's a spell
+	/*
 	if ( info.GetDamageCustom() == TF_DMG_CUSTOM_SPELL_MONOCULUS && pAttacker->GetTeamNumber() == pPlayer->GetTeamNumber() )
 	{
 		return false;
 	}
+	*/
 
 	// in PvE modes, if entities are on the same team, they can't hurt each other
 	// this is needed since not all entities will be players
-	if ( IsPVEModeActive() && 
-			pPlayer->GetTeamNumber() == pAttacker->GetTeamNumber() && 
-			pPlayer != pAttacker && 
-			!info.IsForceFriendlyFire() )
+	/*
+	if (IsPVEModeActive() &&
+		pPlayer->GetTeamNumber() == pAttacker->GetTeamNumber() &&
+		pPlayer != pAttacker &&
+		!info.IsForceFriendlyFire())
 	{
 		return false;
 	}
+	*/
 
 	return BaseClass::FPlayerCanTakeDamage( pPlayer, pAttacker, info );
 }

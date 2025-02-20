@@ -388,6 +388,8 @@ void CObjectTeleporter::SetStartBuildingModel( void )
 	SetState( TELEPORTER_STATE_BUILDING );
 
 	SetModel( TELEPORTER_MODEL_BUILDING );
+
+	GetBaseAnimating()->SetPlaybackRate(2.0);
 }
 
 //-----------------------------------------------------------------------------

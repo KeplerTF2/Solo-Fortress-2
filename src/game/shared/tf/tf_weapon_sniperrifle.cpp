@@ -655,7 +655,7 @@ void CTFSniperRifle::ApplyChargeSpeedModifications( float &flBaseRef )
 		UTIL_TraceLine( vShootPos, vShootPos + vForward * m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_flRange, MASK_BLOCKLOS_AND_NPCS, pPlayer, COLLISION_GROUP_NONE, &tr );
 		
 		CTFPlayer *pTarget = ToTFPlayer( tr.m_pEnt );
-		if ( pTarget && pTarget->IsAlive() && pTarget->GetTeamNumber() != pPlayer->GetTeamNumber() && 
+		if ( pTarget && pTarget->IsAlive() && 
 			 !( pTarget->m_Shared.IsStealthed() && !pTarget->m_Shared.InCond( TF_COND_STEALTHED_BLINK ) ) )
 		{
 			CALL_ATTRIB_HOOK_FLOAT( flBaseRef, mult_sniper_charge_per_sec_with_enemy_under_crosshair );
@@ -1077,10 +1077,10 @@ int CTFSniperRifle::GetCustomDamageType() const
 {
 	if ( IsJarateRifle() )
 	{
-		return TF_DMG_CUSTOM_PENETRATE_NONBURNING_TEAMMATE;
+		return TF_DMG_CUSTOM_NONE;
 	}
 
-	return TF_DMG_CUSTOM_PENETRATE_MY_TEAM;
+	return TF_DMG_CUSTOM_NONE;
 }
 
 //-----------------------------------------------------------------------------
@@ -1163,9 +1163,6 @@ void CTFSniperRifle::ExplosiveHeadShot( CTFPlayer *pAttacker, CTFPlayer *pVictim
 			continue;
 
 		if ( pObjects[i] == pVictim )
-			continue;
-
-		if ( pAttacker->InSameTeam( pObjects[i] ) )
 			continue;
 
 		if ( !pVictim->FVisible( pObjects[i], MASK_OPAQUE ) )
