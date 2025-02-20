@@ -18526,7 +18526,7 @@ void CTFPlayer::DoTauntAttack( void )
 		{
 			CBaseEntity *pEnt = tr.m_pEnt;
 
-			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM && pEnt->GetTeamNumber() != GetTeamNumber() )
+			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM )
 			{
 				CTFPlayer *pVictim = ToTFPlayer( pEnt );
 
@@ -18662,7 +18662,7 @@ void CTFPlayer::DoTauntAttack( void )
 		{
 			CBaseEntity *pEnt = tr.m_pEnt;
 
-			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM && pEnt->GetTeamNumber() != GetTeamNumber() )
+			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM )
 			{
 				// Launch them up a little
 				AngleVectors( QAngle(-45, m_angEyeAngles[YAW], 0), &vecForward );
@@ -18736,9 +18736,6 @@ void CTFPlayer::DoTauntAttack( void )
 				if ( !pTarget )
 					continue;
 
-				if ( pTarget->GetTeamNumber() == GetTeamNumber() )
-					continue;
-
 				// Do a quick trace and make sure we have LOS.
 				trace_t tr;
 				UTIL_TraceLine( WorldSpaceCenter(), pObjects[i]->WorldSpaceCenter(), MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_PLAYER, &tr );
@@ -18804,10 +18801,16 @@ void CTFPlayer::DoTauntAttack( void )
 		CBaseEntity *pEntity = NULL;
 		for ( CEntitySphereQuery sphere( origin, flRadius ); (pEntity = sphere.GetCurrentEntity()) != NULL && vecDamagedPlayers.Count() < ARRAYSIZE( nRandomPick ); sphere.NextEntity() )
 		{
-			// Skip players on the same team or who are invuln
+			// Skip players who are the taunter or who are invuln
 			CTFPlayer *pPlayer = ToTFPlayer( pEntity );
-			if ( !pPlayer || InSameTeam( pPlayer ) || pPlayer->m_Shared.InCond( TF_COND_INVULNERABLE ) )
-				continue;
+			if (pPlayer)
+			{
+				if (pPlayer->m_Shared.InCond(TF_COND_INVULNERABLE))
+					continue;
+
+				if (pPlayer == this)
+					continue;
+			}
 
 			// CEntitySphereQuery actually does a box test. So we need to make sure the distance is less than the radius first.
 			Vector vecPos;
@@ -18936,7 +18939,7 @@ void CTFPlayer::DoTauntAttack( void )
 		{
 			CBaseEntity *pEnt = tr.m_pEnt;
 
-			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM && pEnt->GetTeamNumber() != GetTeamNumber() )
+			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM )
 			{
 				CTFPlayer *pVictim = ToTFPlayer( pEnt );
 
@@ -18988,7 +18991,7 @@ void CTFPlayer::DoTauntAttack( void )
 		{
 			CBaseEntity *pEnt = tr.m_pEnt;
 
-			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM && pEnt->GetTeamNumber() != GetTeamNumber() )
+			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM )
 			{
 				vecForward = (WorldSpaceCenter() - pEnt->WorldSpaceCenter());
 				VectorNormalize( vecForward );
@@ -19009,7 +19012,7 @@ void CTFPlayer::DoTauntAttack( void )
 		{
 			CBaseEntity *pEnt = tr.m_pEnt;
 
-			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM && pEnt->GetTeamNumber() != GetTeamNumber() )
+			if ( pEnt && pEnt->IsPlayer() && pEnt->GetTeamNumber() > LAST_SHARED_TEAM )
 			{
 				vecForward = (WorldSpaceCenter() - pEnt->WorldSpaceCenter());
 				VectorNormalize( vecForward );
@@ -19405,24 +19408,21 @@ void CTFPlayer::ModifyOrAppendCriteria( AI_CriteriaSet& criteriaSet )
 			if ( pTFPlayer )
 			{
 				int iClass = pTFPlayer->GetPlayerClass()->GetClassIndex();
-				if ( !InSameTeam(pTFPlayer) )
+				// Prevent spotting stealthed enemies who haven't been exposed recently
+				if ( pTFPlayer->m_Shared.InCond( TF_COND_STEALTHED ) )
 				{
-					// Prevent spotting stealthed enemies who haven't been exposed recently
-					if ( pTFPlayer->m_Shared.InCond( TF_COND_STEALTHED ) )
+					if ( pTFPlayer->m_Shared.GetLastStealthExposedTime() < (gpGlobals->curtime - 3.0) )
 					{
-						if ( pTFPlayer->m_Shared.GetLastStealthExposedTime() < (gpGlobals->curtime - 3.0) )
-						{
-							iClass = TF_CLASS_UNDEFINED;
-						}
-						else
-						{
-							iClass = TF_CLASS_SPY;
-						}
+						iClass = TF_CLASS_UNDEFINED;
 					}
-					else if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
+					else
 					{
-						iClass = pTFPlayer->m_Shared.GetDisguiseClass();
+						iClass = TF_CLASS_SPY;
 					}
+				}
+				else if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
+				{
+					iClass = pTFPlayer->m_Shared.GetDisguiseClass();
 				}
 
 				if ( iClass > TF_CLASS_UNDEFINED && iClass <= TF_LAST_NORMAL_CLASS )
@@ -19435,10 +19435,7 @@ void CTFPlayer::ModifyOrAppendCriteria( AI_CriteriaSet& criteriaSet )
 						iVisibleTeam = pTFPlayer->m_Shared.GetDisguiseTeam();
 					}
 
-					if ( iVisibleTeam != GetTeamNumber() )
-					{
-						criteriaSet.AppendCriteria( "crosshair_enemy", "yes" );
-					}
+					criteriaSet.AppendCriteria( "crosshair_enemy", "yes" );
 				}
 			}
 		}
@@ -20032,7 +20029,7 @@ void CTFPlayer::ClearExpression( void )
 //-----------------------------------------------------------------------------
 bool CTFPlayer::ShouldShowVoiceSubtitleToEnemy( void )
 {
-	return ( m_Shared.InCond( TF_COND_DISGUISED ) && m_Shared.GetDisguiseTeam() != GetTeamNumber() );
+	return ( m_Shared.InCond( TF_COND_DISGUISED ) );
 }
 
 //-----------------------------------------------------------------------------
@@ -20078,9 +20075,10 @@ extern ConVar friendlyfire;
 //-----------------------------------------------------------------------------
 bool CTFPlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
 {
-	bool bIsMedic = false;
+	//bool bIsMedic = false;
 	bool bIsMeleeingTeamMate = false;
 
+	/*
 	if ( !friendlyfire.GetBool() )
 	{
 		//Do Lag comp on medics trying to heal team mates.
@@ -20118,6 +20116,7 @@ bool CTFPlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const 
 			}
 		}
 	}
+	*/
 
 	const Vector& vMyOrigin = GetAbsOrigin();
 	const Vector& vHisOrigin = pPlayer->GetAbsOrigin();
@@ -20135,19 +20134,19 @@ bool CTFPlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const 
 		return true;
 
 	// Josh: Don't do cone check when melee-ing team mates, as we could be inside them.
-	if ( !bIsMeleeingTeamMate )
-	{
-		// If their origin is not within a 45 degree cone in front of us, no need to lag compensate.
-		Vector vForward;
-		AngleVectors( pCmd->viewangles, &vForward );
+	//if ( !bIsMeleeingTeamMate )
+	//{
+	// If their origin is not within a 45 degree cone in front of us, no need to lag compensate.
+	Vector vForward;
+	AngleVectors( pCmd->viewangles, &vForward );
 
-		Vector vDiff = vHisOrigin - vMyOrigin;
-		VectorNormalize( vDiff );
+	Vector vDiff = vHisOrigin - vMyOrigin;
+	VectorNormalize( vDiff );
 
-		float flCosAngle = 0.707107f;	// 45 degree angle
-		if ( vForward.Dot( vDiff ) < flCosAngle )
-			return false;
-	}
+	float flCosAngle = 0.707107f;	// 45 degree angle
+	if ( vForward.Dot( vDiff ) < flCosAngle )
+		return false;
+	//}
 
 	return true;
 }

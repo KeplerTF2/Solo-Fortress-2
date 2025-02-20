@@ -909,8 +909,8 @@ int	CTFSniperRifle::GetDamageType( void ) const
 	// This mod lets sniper no scope headshot for 120, so we need to always use hit locations
 	return BaseClass::GetDamageType();
 
-	// Only do hit location damage if we're zoomed
 	/*
+	// Only do hit location damage if we're zoomed
 	CTFPlayer *pPlayer = ToTFPlayer( GetPlayerOwner() );
 	if ( pPlayer && pPlayer->m_Shared.InCond( TF_COND_ZOOMED ) )
 		return BaseClass::GetDamageType();

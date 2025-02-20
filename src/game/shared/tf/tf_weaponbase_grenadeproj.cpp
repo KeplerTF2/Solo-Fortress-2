@@ -732,13 +732,12 @@ void CTFWeaponBaseGrenadeProj::VPhysicsUpdate( IPhysicsObject *pPhysics )
 	trace_t tr;
 	UTIL_TraceLine( start, start + vel * gpGlobals->frametime, CONTENTS_HITBOX|CONTENTS_MONSTER|CONTENTS_SOLID, &filterChain, &tr );
 
-	bool bHitEnemy = tr.m_pEnt && tr.m_pEnt->GetTeamNumber() == GetEnemyTeam(GetTeamNumber());
-	bool bHitFriendly = tr.m_pEnt && tr.m_pEnt->GetTeamNumber() == GetTeamNumber();
-
+	bool bHitEnemy = tr.m_pEnt;
 
 	// Combat items are solid to enemy projectiles and bullets
-	if ( (bHitEnemy || bHitFriendly) && tr.m_pEnt->IsCombatItem() )
+	if ( (bHitEnemy ) && tr.m_pEnt->IsCombatItem() )
 	{
+
 		if ( IsAllowedToExplode() )
 		{
 			Explode( &tr, GetDamageType() );
@@ -752,7 +751,7 @@ void CTFWeaponBaseGrenadeProj::VPhysicsUpdate( IPhysicsObject *pPhysics )
 
 	if ( tr.startsolid )
 	{
-		if ((bHitEnemy || bHitFriendly))
+		if (bHitEnemy)
 		{
 			Touch( tr.m_pEnt );
 		}
