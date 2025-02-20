@@ -6,7 +6,7 @@
 	}
 	"itemtest"
 	{
-		"viewed"		"31"
+		"viewed"		"33"
 	}
 	"kotf_atomizer_a3"
 	{

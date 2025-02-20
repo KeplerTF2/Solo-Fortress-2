@@ -1838,7 +1838,7 @@ void CTFBot::Event_Killed( const CTakeDamageInfo &info )
 	}
 
 
-	if ( info.GetInflictor() && info.GetInflictor()->GetTeamNumber() != GetTeamNumber() )
+	if ( info.GetInflictor() )
 	{
 		CObjectSentrygun *sentrygun = dynamic_cast< CObjectSentrygun * >( info.GetInflictor() );
 
@@ -4162,9 +4162,6 @@ bool CTFBot::ShouldFireCompressionBlast( void )
 	{
 		CBaseEntity *pObject = pObjects[i];
 		if ( pObject == this )
-			continue;
-
-		if ( pObject->GetTeamNumber() == GetTeamNumber() )
 			continue;
 
 		// should air blast player logic is already done before this loop

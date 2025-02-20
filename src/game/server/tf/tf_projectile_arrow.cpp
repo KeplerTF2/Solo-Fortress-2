@@ -418,7 +418,7 @@ bool CTFProjectile_Arrow::StrikeTarget( mstudiobbox_t *pBox, CBaseEntity *pOther
 
 	// Block and break on invulnerable players, ignoring teammates under normal rules
 	CTFPlayer *pTFPlayerOther = ToTFPlayer( pOther );
-	if ( pTFPlayerOther && ( pTFPlayerOther != GetOwnerEntity() ) && pTFPlayerOther->m_Shared.IsInvulnerable() && ( !InSameTeam( pTFPlayerOther ) || CanCollideWithTeammates() ) )
+	if ( pTFPlayerOther && ( pTFPlayerOther != GetOwnerEntity() ) && pTFPlayerOther->m_Shared.IsInvulnerable() )
 		return false;
 
 	CBaseAnimating *pOtherAnim = dynamic_cast< CBaseAnimating* >(pOther);
@@ -475,73 +475,62 @@ bool CTFProjectile_Arrow::StrikeTarget( mstudiobbox_t *pBox, CBaseEntity *pOther
 			}
 		}
 
-		if ( !InSameTeam( pOther ) )
+		IScorer *pScorerInterface = dynamic_cast<IScorer*>( pAttacker );
+		if ( pScorerInterface )
 		{
-			IScorer *pScorerInterface = dynamic_cast<IScorer*>( pAttacker );
-			if ( pScorerInterface )
-			{
-				pAttacker = pScorerInterface->GetScorer();
-			}
+			pAttacker = pScorerInterface->GetScorer();
+		}
 
-			if ( m_bArrowAlight )
-			{
-				nDamageType |= DMG_IGNITE;
-				nDamageCustom = TF_DMG_CUSTOM_FLYINGBURN;
-			}
+		if ( m_bArrowAlight )
+		{
+			nDamageType |= DMG_IGNITE;
+			nDamageCustom = TF_DMG_CUSTOM_FLYINGBURN;
+		}
 
-			if ( bHeadshot )
-			{
-				nDamageType |= DMG_CRITICAL;
-				nDamageCustom = TF_DMG_CUSTOM_HEADSHOT;
-			}
+		if ( bHeadshot )
+		{
+			nDamageType |= DMG_CRITICAL;
+			nDamageCustom = TF_DMG_CUSTOM_HEADSHOT;
+		}
 
-			if ( m_bCritical )
-			{
-				nDamageType |= DMG_CRITICAL;
-			}
+		if ( m_bCritical )
+		{
+			nDamageType |= DMG_CRITICAL;
+		}
 
 #ifdef GAME_DLL
-			if ( TFGameRules()->IsPVEModeControlled( pAttacker ) )
+		if ( TFGameRules()->IsPVEModeControlled( pAttacker ) )
+		{
+			// scenario bots cant crit (unless they always do)
+			CTFBot *bot = ToTFBot( pAttacker );
+			if ( !bot || !bot->HasAttribute( CTFBot::ALWAYS_CRIT ) )
 			{
-				// scenario bots cant crit (unless they always do)
-				CTFBot *bot = ToTFBot( pAttacker );
-				if ( !bot || !bot->HasAttribute( CTFBot::ALWAYS_CRIT ) )
-				{
-					nDamageType &= ~DMG_CRITICAL;
-				}
-			}
-#endif
-			// Damage
-			if ( bApplyEffect )
-			{
-				// Apply Milk First so we can get health from this
-				if ( m_bApplyMilkOnHit && pOther->IsPlayer() )
-				{
-					CTFPlayer *pVictim = ToTFPlayer( pOther );
-					if ( pVictim && pVictim->m_Shared.CanBeDebuffed() && pVictim->CanGetWet() )
-					{
-						// duration is based on damage
-						float flDuration = RemapValClamped( GetDamage(), 25.0f, 75.0f, 6.0f, 10.0f );
-						pVictim->m_Shared.AddCond( TF_COND_MAD_MILK, flDuration, pAttacker );
-						pVictim->m_Shared.SetPeeAttacker( ToTFPlayer( pAttacker ) );
-						pVictim->SpeakConceptIfAllowed( MP_CONCEPT_JARATE_HIT );
-					}
-				}
-
-				CTakeDamageInfo info( this, pAttacker, m_hLauncher, vecVelocity, vecOrigin, GetDamage(), nDamageType, nDamageCustom );
-				pOther->TakeDamage( info );
-
-				// Play an impact sound.
-				ImpactSound( "Weapon_Arrow.ImpactFlesh", true );
+				nDamageType &= ~DMG_CRITICAL;
 			}
 		}
-		else if ( pOther->IsPlayer() ) // Hit a team-mate.
+#endif
+		// Damage
+		if ( bApplyEffect )
 		{
-			// Heal
-			if ( bApplyEffect )
+			// Apply Milk First so we can get health from this
+			if ( m_bApplyMilkOnHit && pOther->IsPlayer() )
 			{
-				ImpactTeamPlayer( dynamic_cast<CTFPlayer*>( pOther ) );
+				CTFPlayer *pVictim = ToTFPlayer( pOther );
+				if ( pVictim && pVictim->m_Shared.CanBeDebuffed() && pVictim->CanGetWet() )
+				{
+					// duration is based on damage
+					float flDuration = RemapValClamped( GetDamage(), 25.0f, 75.0f, 6.0f, 10.0f );
+					pVictim->m_Shared.AddCond( TF_COND_MAD_MILK, flDuration, pAttacker );
+					pVictim->m_Shared.SetPeeAttacker( ToTFPlayer( pAttacker ) );
+					pVictim->SpeakConceptIfAllowed( MP_CONCEPT_JARATE_HIT );
+				}
 			}
+
+			CTakeDamageInfo info( this, pAttacker, m_hLauncher, vecVelocity, vecOrigin, GetDamage(), nDamageType, nDamageCustom );
+			pOther->TakeDamage( info );
+
+			// Play an impact sound.
+			ImpactSound( "Weapon_Arrow.ImpactFlesh", true );
 		}
 	}
 
@@ -659,8 +648,8 @@ void CTFProjectile_Arrow::BuildingHealingArrow( CBaseEntity *pOther )
 	if ( !pTFAttacker )
 		return;
 
-	// if not on our team, forget about it
-	if ( GetTeamNumber() != pOther->GetTeamNumber() )
+	// if not our building, forget about it
+	if ( pTFAttacker != dynamic_cast< CBaseObject * >( pOther )->GetBuilder() )
 		return;
 
 	int iArrowHealAmount = 0;
@@ -741,7 +730,7 @@ void CTFProjectile_Arrow::ArrowTouch( CBaseEntity *pOther )
 	if ( !pOther )
 		return;
 
-	bool bShield = pOther->IsCombatItem() && !InSameTeam( pOther );
+	bool bShield = pOther->IsCombatItem();
 	CTFPumpkinBomb *pPumpkinBomb = dynamic_cast< CTFPumpkinBomb * >( pOther );
 
 	if ( pOther->IsSolidFlagSet( FSOLID_TRIGGER | FSOLID_VOLUME_CONTENTS ) && !pPumpkinBomb && !bShield )
@@ -806,7 +795,7 @@ void CTFProjectile_Arrow::ArrowTouch( CBaseEntity *pOther )
 
 	// If we hit a hitbox, stop tracing.
 	mstudiobbox_t *closest_box = NULL;
-	if ( tr.m_pEnt && tr.m_pEnt == pOther && tr.m_pEnt->GetTeamNumber() != GetTeamNumber() )
+	if ( tr.m_pEnt && tr.m_pEnt == pOther )
 	{
 		// This means the arrow was true and was flying directly at a hitbox on the target.
 		// We'll attach to that hitbox.
