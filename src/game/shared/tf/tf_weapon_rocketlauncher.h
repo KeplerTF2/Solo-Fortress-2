@@ -175,12 +175,16 @@ public:
 	DECLARE_DATADESC();
 #endif
 
+	CTFCrossbow();
+
 	virtual bool	Holster( CBaseCombatWeapon *pSwitchingTo ) OVERRIDE;
 	virtual int		GetWeaponID( void ) const			{ return TF_WEAPON_CROSSBOW; }
 	virtual void	SecondaryAttack( void );
 	virtual float	GetProjectileSpeed( void );
 	virtual float	GetProjectileGravity( void );
 	virtual bool	IsViewModelFlipped( void );
+
+	void IncrementAmmo(void);
 
 	virtual void	ItemPostFrame( void );
 	virtual void	ModifyProjectile( CBaseEntity* pProj );
