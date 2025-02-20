@@ -5259,9 +5259,6 @@ void CTFWeaponBase::ApplyOnHitAttributes( CBaseEntity *pVictimBaseEntity, CTFPla
 				if ( !pObjects[i]->IsAlive() )
 					continue;
 
-				if ( pObjects[i]->GetTeamNumber() != pVictim->GetTeamNumber() )
-					continue;
-
 				if ( !FVisible( pObjects[i], MASK_OPAQUE ) )
 					continue;
 

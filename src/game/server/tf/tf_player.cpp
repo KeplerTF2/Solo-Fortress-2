@@ -8331,8 +8331,9 @@ void CTFPlayer::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, 
 	// Ignore hitboxes for all weapons except the sniper rifle
 	CTakeDamageInfo info_modified = info;
 	bool bIsHeadshot = false;
+	bool bUseHitGroups = info_modified.GetDamageType() & DMG_USE_HITLOCATIONS;
 
-	if ( info_modified.GetDamageType() & DMG_USE_HITLOCATIONS )
+	if (bUseHitGroups)
 	{
 		if ( !m_Shared.InCond( TF_COND_INVULNERABLE ) && ptr->hitgroup == HITGROUP_HEAD )
 		{
