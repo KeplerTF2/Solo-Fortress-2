@@ -181,7 +181,7 @@ bool INextBot::IsEnemy( const CBaseEntity *them ) const
 		return false;
 		
 	// this is not strictly correct, as spectators are not enemies
-	return const_cast< INextBot * >( this )->GetEntity()->GetTeamNumber() != them->GetTeamNumber();
+	return true;
 }
 
 

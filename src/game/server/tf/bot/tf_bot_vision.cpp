@@ -39,7 +39,8 @@ void CTFBotVision::Update( void )
 
 	// forget spies we have lost sight of
 	CUtlVector< CTFPlayer * > playerVector;
-	CollectPlayers( &playerVector, GetEnemyTeam( me->GetTeamNumber() ), COLLECT_ONLY_LIVING_PLAYERS );
+	CollectPlayers(&playerVector, GetEnemyTeam(me->GetTeamNumber()), COLLECT_ONLY_LIVING_PLAYERS);
+	CollectPlayers(&playerVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS, true);
 
 	for( int i=0; i<playerVector.Count(); ++i )
 	{
@@ -299,10 +300,10 @@ bool CTFBotVision::IsIgnored( CBaseEntity *subject ) const
 			return false;
 		}
 		
-		if ( enemy->m_Shared.InCond( TF_COND_DISGUISED ) && enemy->m_Shared.GetDisguiseTeam() == me->GetTeamNumber() )
+		if ( enemy->m_Shared.InCond( TF_COND_DISGUISED ) )
 		{
 			// spy is disguised as a member of my team
-			return true;
+			return false;
 		}
 	}
 	else if ( subject->IsBaseObject() ) // not a player

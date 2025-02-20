@@ -309,7 +309,8 @@ EventDesiredResult< CTFBot > CTFBotMainAction::OnInjured( CTFBot *me, const CTak
 
 			// chance of nearby friends noticing the backstab
 			CUtlVector< CTFPlayer * > playerVector;
-			CollectPlayers( &playerVector, me->GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
+			CollectPlayers(&playerVector, 2, COLLECT_ONLY_LIVING_PLAYERS);
+			CollectPlayers(&playerVector, 3, COLLECT_ONLY_LIVING_PLAYERS, true);
 
 			float minRange = tf_bot_notice_backstab_min_range.GetFloat();
 			float maxRange = tf_bot_notice_backstab_max_range.GetFloat();

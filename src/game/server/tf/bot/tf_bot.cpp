@@ -1473,8 +1473,8 @@ void CTFBot::Touch( CBaseEntity *pOther )
 void CTFBot::AvoidPlayers( CUserCmd *pCmd )
 {
 	// Turn off the avoid player code.
-	if ( !tf_avoidteammates.GetBool() || !tf_avoidteammates_pushaway.GetBool() )
-		return;
+	//if ( !tf_avoidteammates.GetBool() || !tf_avoidteammates_pushaway.GetBool() )
+	return;
 
 	Vector forward, right;
 	EyeVectors( &forward, &right );
@@ -2547,10 +2547,12 @@ public:
 
 	virtual bool ShouldSearch( CNavArea *adjArea, CNavArea *currentArea, float travelDistanceSoFar )
 	{
+		/*
 		if ( adjArea->IsBlocked( m_me->GetTeamNumber() ) )
 		{
 			return false;
 		}
+		*/
 
 		if ( travelDistanceSoFar > m_maxRange )
 		{
