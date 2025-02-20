@@ -6,7 +6,7 @@
 	}
 	"itemtest"
 	{
-		"viewed"		"29"
+		"viewed"		"31"
 	}
 	"kotf_atomizer_a3"
 	{
@@ -15,5 +15,9 @@
 	"tr_walkway_rc2"
 	{
 		"viewed"		"2"
+	}
+	"ffa_atomizer_a1"
+	{
+		"viewed"		"3"
 	}
 }

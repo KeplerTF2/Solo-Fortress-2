@@ -1034,13 +1034,14 @@ bool CTFSniperRifle::CanFireCriticalShot( bool bIsHeadshot, CBaseEntity *pTarget
 			return false;
 	}
 
+	// can crit when not zoomed, it's just less damage
+	/*
 	int iCanCritNoScope = 0;
 	CALL_ATTRIB_HOOK_INT( iCanCritNoScope, sniper_crit_no_scope );
 	if ( iCanCritNoScope == 0 )
 	{
 		if ( pPlayer )
 		{
-			// no crits if they're not zoomed
 			if ( pPlayer->GetFOV() >= pPlayer->GetDefaultFOV() )
 			{
 				return false;
@@ -1053,6 +1054,7 @@ bool CTFSniperRifle::CanFireCriticalShot( bool bIsHeadshot, CBaseEntity *pTarget
 			}
 		}
 	}
+	*/
 
 	m_bCurrentAttackIsCrit = true;
 	m_bCurrentShotIsHeadshot = bIsHeadshot;

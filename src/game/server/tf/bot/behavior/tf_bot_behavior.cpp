@@ -292,7 +292,7 @@ EventDesiredResult< CTFBot > CTFBotMainAction::OnInjured( CTFBot *me, const CTak
 	// notice the gunfire - needed for sentry guns, which don't go through the player OnWeaponFired() system
 	me->GetVisionInterface()->AddKnownEntity( subject );
 
-	if ( info.GetInflictor() && info.GetInflictor()->GetTeamNumber() != me->GetTeamNumber() )
+	if ( info.GetInflictor() )
 	{
 		CObjectSentrygun *sentrygun = dynamic_cast< CObjectSentrygun * >( info.GetInflictor() );
 
@@ -870,9 +870,6 @@ bool CTFBotMainAction::IsImmediateThreat( const CBaseCombatCharacter *subject, c
 	if ( !me || !me->IsSelf( subject ) )
 		return false;
 
-	if ( me->InSameTeam( threat->GetEntity() ) )
-		return false;
-
 	if ( !threat->GetEntity()->IsAlive() )
 		return false;
 
@@ -1285,7 +1282,11 @@ void CTFBotMainAction::FireWeaponAtEnemy( CTFBot *me )
 	if ( me->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) && !me->IsAmmoLow() && me->GetIntentionInterface()->ShouldHurry( me ) != ANSWER_YES )
 	{
 		const float spinTime = 3.0f;
-		if ( me->GetVisionInterface()->GetTimeSinceVisible( GetEnemyTeam( me->GetTeamNumber() ) ) < spinTime )
+		if (me->GetVisionInterface()->GetTimeSinceVisible(2) < spinTime)
+		{
+			me->PressAltFireButton();
+		}
+		else if (me->GetVisionInterface()->GetTimeSinceVisible(3) < spinTime)
 		{
 			me->PressAltFireButton();
 		}

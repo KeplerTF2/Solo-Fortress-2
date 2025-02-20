@@ -8345,6 +8345,15 @@ void CTFPlayer::TraceAttack( const CTakeDamageInfo &info, const Vector &vecDir, 
 				bCritical = false;
 			}
 
+			// Still crit, but do less damage if not zoomed in with rifle
+			else if ( pAttacker->IsPlayerClass(TF_CLASS_SNIPER) )
+			{
+				if (pAttacker->GetFOV() >= pAttacker->GetDefaultFOV())
+				{
+					info_modified.ScaleDamage(0.8);
+				}
+			}
+
 			int iBackheadshot = 0;
 			CALL_ATTRIB_HOOK_INT_ON_OTHER( info.GetInflictor(), iBackheadshot, back_headshot );
 			if ( iBackheadshot )
