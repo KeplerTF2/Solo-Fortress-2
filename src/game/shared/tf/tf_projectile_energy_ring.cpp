@@ -98,7 +98,7 @@ float CTFProjectile_EnergyRing::GetGravity( void )
 
 float CTFProjectile_EnergyRing::GetInitialVelocity( void )
 {
-	return 1200.f; 
+	return 2000.f; 
 }
 
 //-----------------------------------------------------------------------------

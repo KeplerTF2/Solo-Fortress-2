@@ -3201,7 +3201,7 @@ bool CTFWeaponBase::ShouldDraw( void )
 					iLocalPlayerTeam = pLocalPlayer->m_hStudent->GetTeamNumber();
 				}
 				// If we are disguised we may want to draw the disguise weapon.
-				if ( iLocalPlayerTeam != pOwner->GetTeamNumber() && (iLocalPlayerTeam != TEAM_SPECTATOR) )
+				if ( (iLocalPlayerTeam != TEAM_SPECTATOR) )
 				{
 					// We are a disguised enemy, so only draw the disguise weapon.
 					if ( pTFOwner->m_Shared.GetDisguiseWeapon() != this )
@@ -3211,11 +3211,13 @@ bool CTFWeaponBase::ShouldDraw( void )
 				}
 				else
 				{
+					/*
 					// We are a disguised friendly. Don't draw the disguise weapon.
 					if ( m_bDisguiseWeapon )
 					{
 						return false;
 					}
+					*/
 				}
 			}
 			else
@@ -3505,7 +3507,7 @@ int CTFWeaponBase::GetWorldModelIndex( void )
 		int iLocalTeam = pLocalPlayer->GetTeamNumber();
 
 		// We only show disguise weapon to the enemy team when owner is disguised
-		bool bUseDisguiseWeapon = ( pPlayer->GetTeamNumber() != iLocalTeam && iLocalTeam > LAST_SHARED_TEAM );
+		bool bUseDisguiseWeapon = true;// (pPlayer->GetTeamNumber() != iLocalTeam && iLocalTeam > LAST_SHARED_TEAM);
 
 		if ( bUseDisguiseWeapon && pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
 		{
@@ -4784,7 +4786,7 @@ int CTFWeaponBase::GetSkin()
 	int iLocalTeam = pLocalPlayer->GetTeamNumber();
 	
 	// We only show disguise weapon to the enemy team when owner is disguised
-	bool bUseDisguiseWeapon = ( iTeamNumber != iLocalTeam && iLocalTeam > LAST_SHARED_TEAM );
+	bool bUseDisguiseWeapon = true;// (iTeamNumber != iLocalTeam && iLocalTeam > LAST_SHARED_TEAM);
 
 	if ( bUseDisguiseWeapon && pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )
 	{

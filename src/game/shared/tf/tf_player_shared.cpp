@@ -3344,8 +3344,8 @@ void CTFPlayerShared::OnAddDemoCharge( void )
 int CTFPlayerShared::GetDisplayedTeam( void ) const
 {
 	int iVisibleTeam = m_pOuter->GetTeamNumber();
-	// if this player is disguised and on the other team, use disguise team
-	if ( InCond( TF_COND_DISGUISED ) && m_pOuter->IsEnemyPlayer() )
+	// if this player is disguised, use disguise team
+	if ( InCond( TF_COND_DISGUISED ) )
 	{
 		iVisibleTeam = GetDisguiseTeam();
 	}
@@ -4547,9 +4547,6 @@ void CTFPlayerShared::ApplyRocketPackStun( float flStunDuration )
 			continue;
 
 		if ( !pObjects[i]->IsAlive() )
-			continue;
-
-		if ( m_pOuter->InSameTeam( pObjects[i] ) )
 			continue;
 
 		if ( !m_pOuter->FVisible( pObjects[i], MASK_OPAQUE ) )
@@ -7161,13 +7158,10 @@ void CTFPlayerShared::OnRemoveDisguised( void )
 	// if local player is on the other team, reset the model of this player
 	CTFPlayer *pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
 
-	if ( !m_pOuter->InSameTeam( pLocalPlayer ) )
-	{
-		TFPlayerClassData_t *pData = GetPlayerClassData( TF_CLASS_SPY );
-		int iIndex = modelinfo->GetModelIndex( pData->GetModelName() );
+	TFPlayerClassData_t *pData = GetPlayerClassData( TF_CLASS_SPY );
+	int iIndex = modelinfo->GetModelIndex( pData->GetModelName() );
 
-		m_pOuter->SetModelIndex( iIndex );
-	}
+	m_pOuter->SetModelIndex( iIndex );
 
 	m_pOuter->EmitSound( "Player.Spy_Disguise" );
 
@@ -7472,14 +7466,6 @@ void CTFPlayerShared::UpdateCritBoostEffect( ECritBoostUpdateType eUpdateType )
 		}
 		else
 		{
-			// is this player an enemy?
-			if ( m_pOuter->GetTeamNumber() != GetLocalPlayerTeam() )
-			{
-				// are they a cloaked spy? or disguised as someone who almost assuredly isn't also critboosted?
-				if ( IsStealthed() || InCond( TF_COND_STEALTHED_BLINK ) || InCond( TF_COND_DISGUISED ) )
-					return;
-			}
-
 			pWeapon = m_pOuter->GetActiveWeapon();
 		}
 
@@ -7487,7 +7473,7 @@ void CTFPlayerShared::UpdateCritBoostEffect( ECritBoostUpdateType eUpdateType )
 		{
 			if ( !m_pOuter->m_pCritBoostEffect )
 			{
-				if ( InCond( TF_COND_DISGUISED ) && !m_pOuter->IsLocalPlayer() && m_pOuter->GetTeamNumber() != GetLocalPlayerTeam() )
+				if ( InCond( TF_COND_DISGUISED ) && !m_pOuter->IsLocalPlayer() )
 				{
 					const char *pEffectName = ( GetDisguiseTeam() == TF_TEAM_RED ) ? "critgun_weaponmodel_red" : "critgun_weaponmodel_blu";
 					m_pOuter->m_pCritBoostEffect = pWeapon->ParticleProp()->Create( pEffectName, PATTACH_ABSORIGIN_FOLLOW );
@@ -8278,12 +8264,9 @@ int CTFPlayerShared::GetDisguiseMaxHealth( void )
 //-----------------------------------------------------------------------------
 void CTFPlayerShared::RemoveDisguise( void )
 {
-	if ( GetDisguiseTeam() != m_pOuter->GetTeamNumber() )
+	if ( InCond( TF_COND_TELEPORTED ) )
 	{
-		if ( InCond( TF_COND_TELEPORTED ) )
-		{
-			RemoveCond( TF_COND_TELEPORTED );
-		}
+		RemoveCond( TF_COND_TELEPORTED );
 	}
 
 	RemoveCond( TF_COND_DISGUISED );
@@ -9338,7 +9321,8 @@ CTFWeaponBase *CTFPlayerShared::GetActiveTFWeapon() const
 //-----------------------------------------------------------------------------
 bool CTFPlayerShared::IsAlly( CBaseEntity *pEntity )
 {
-	return ( pEntity->GetTeamNumber() == m_pOuter->GetTeamNumber() );
+	return false; // Test this, I have no idea if this breaks anything
+	//return ( pEntity->GetTeamNumber() == m_pOuter->GetTeamNumber() );
 }
 
 //-----------------------------------------------------------------------------

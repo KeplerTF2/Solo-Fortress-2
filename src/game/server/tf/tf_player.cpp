@@ -8993,7 +8993,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 		{
 			// Did we land on a guy from the enemy team?
 			CTFPlayer *pOther = ToTFPlayer( GetGroundEntity() );
-			if ( pOther && pOther->GetTeamNumber() != GetTeamNumber() )
+			if ( pOther )
 			{
 				float flStompDamage = 10.0f + info.GetDamage() * 3.f;
 
@@ -9041,6 +9041,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 				m_Local.m_flFallVelocity = 0.f;
 
 				// Extinguish teammates
+				/*
 				CUtlVector< CTFPlayer * > vecPlayers;
 				CollectPlayers( &vecPlayers, GetTeamNumber(), COLLECT_ONLY_LIVING_PLAYERS );
 				FOR_EACH_VEC( vecPlayers, i )
@@ -9062,6 +9063,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 					pPlayer->EmitSound( "TFPlayer.FlameOut" );
 					CTF_GameStats.Event_PlayerAwardBonusPoints( this, pPlayer, 10 );
 				}
+				*/
 			}
 
 			info.SetDamage( Max( info.GetDamage() * 0.25f, 1.f ) );
@@ -9771,7 +9773,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 
 	if ( pWeapon && ( ( pWeapon->GetWeaponID() == TF_WEAPON_BAT_FISH ) || ( pWeapon->GetWeaponID() == TF_WEAPON_SLAP ) ) )
 	{
-		bool bDisguised = m_Shared.InCond( TF_COND_DISGUISED ) && pTFAttacker && ( m_Shared.GetDisguiseTeam() == pTFAttacker->GetTeamNumber() );
+		//bool bDisguised = m_Shared.InCond( TF_COND_DISGUISED ) && pTFAttacker && ( m_Shared.GetDisguiseTeam() == pTFAttacker->GetTeamNumber() );
 		bool bFish = ( pWeapon->GetWeaponID() == TF_WEAPON_BAT_FISH );
 
 		if ( m_iHealth <= 0 )
@@ -9779,7 +9781,7 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 			info.SetDamageCustom( bFish ? TF_DMG_CUSTOM_FISH_KILL : TF_DMG_CUSTOM_SLAP_KILL );
 		}
 
-		if ( m_iHealth <= 0 || !bDisguised )
+		if ( m_iHealth <= 0 )
 		{
 			// Do you ever find yourself typing "fish damage override" into a million-lines-of-code project and
 			// wondering about the world? Because I do.
@@ -9952,8 +9954,8 @@ int CTFPlayer::OnTakeDamage( const CTakeDamageInfo &inputInfo )
 // 						if ( pObjects[i] == this )
 // 							continue;
 
-					if ( pAttacker->InSameTeam( pObjects[i] ) )
-						continue;
+					//if ( pAttacker->InSameTeam( pObjects[i] ) )
+					//	continue;
 
 					CTFPlayer *pTFBlastVictim = ToTFPlayer( pObjects[i] );
 
@@ -10838,7 +10840,7 @@ int CTFPlayer::OnTakeDamage_Alive( const CTakeDamageInfo &info )
 	}
 
 	//No bleeding while invul or disguised.
-	bool bBleed = ( ( m_Shared.InCond( TF_COND_DISGUISED ) == false || m_Shared.GetDisguiseTeam() != pAttacker->GetTeamNumber() )
+	bool bBleed = ( ( m_Shared.InCond( TF_COND_DISGUISED ) == false )
 					&& !m_Shared.IsInvulnerable() );
 
 	// No bleed effects for DMG_GENERIC
@@ -11291,104 +11293,101 @@ void CTFPlayer::Event_KilledOther( CBaseEntity *pVictim, const CTakeDamageInfo &
 
 		if ( IsPlayerClass( TF_CLASS_DEMOMAN ) )
 		{
-			if ( pVictim->GetTeamNumber() != GetTeamNumber() )
+			// Check if this kill should refill the charge meter
+			CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *>(info.GetWeapon());
+
+			float flRefill = 0.0f;
+			CALL_ATTRIB_HOOK_FLOAT( flRefill, kill_refills_meter );
+			if ( m_Shared.GetCarryingRuneType() != RUNE_NONE ) // Powerups restricts charge 
 			{
-				// Check if this kill should refill the charge meter
-				CTFWeaponBase *pWeapon = dynamic_cast<CTFWeaponBase *>(info.GetWeapon());
+				flRefill *= 0.2;
+			}
 
-				float flRefill = 0.0f;
-				CALL_ATTRIB_HOOK_FLOAT( flRefill, kill_refills_meter );
-				if ( m_Shared.GetCarryingRuneType() != RUNE_NONE ) // Powerups restricts charge 
+			if ( flRefill > 0 && ((info.GetDamageType() & DMG_MELEE) || ( info.GetDamageCustom() == TF_DMG_CUSTOM_CHARGE_IMPACT ) ) )
+			{
+				m_Shared.SetDemomanChargeMeter( m_Shared.GetDemomanChargeMeter() + flRefill * 100.0f );
+			}
+
+			if ( ( pWeapon && pWeapon->IsCurrentAttackDuringDemoCharge() ) || ( info.GetDamageCustom() == TF_DMG_CUSTOM_CHARGE_IMPACT ) )
+			{	
+				if ( flRefill > 0 )
 				{
-					flRefill *= 0.2;
-				}
-
-				if ( flRefill > 0 && ((info.GetDamageType() & DMG_MELEE) || ( info.GetDamageCustom() == TF_DMG_CUSTOM_CHARGE_IMPACT ) ) )
-				{
-					m_Shared.SetDemomanChargeMeter( m_Shared.GetDemomanChargeMeter() + flRefill * 100.0f );
-				}
-
-				if ( ( pWeapon && pWeapon->IsCurrentAttackDuringDemoCharge() ) || ( info.GetDamageCustom() == TF_DMG_CUSTOM_CHARGE_IMPACT ) )
-				{	
-					if ( flRefill > 0 )
+					IGameEvent *event = gameeventmanager->CreateEvent( "kill_refills_meter" );
+					if ( event )
 					{
-						IGameEvent *event = gameeventmanager->CreateEvent( "kill_refills_meter" );
-						if ( event )
-						{
-							event->SetInt( "index", entindex() );
-							gameeventmanager->FireEvent( event );
-						}
-					}
-
-					if ( pTFVictim )
-					{
-						// could the attacker see this player when the charge started?
-						if ( m_Shared.m_hPlayersVisibleAtChargeStart.Find( pTFVictim ) == m_Shared.m_hPlayersVisibleAtChargeStart.InvalidIndex() )
-						{
-							AwardAchievement( ACHIEVEMENT_TF_DEMOMAN_KILL_PLAYER_YOU_DIDNT_SEE );
-						}
+						event->SetInt( "index", entindex() );
+						gameeventmanager->FireEvent( event );
 					}
 				}
 
-				// Demoman achievement:  Kill at least 3 players capping or pushing the cart with the same detonation
-				CTriggerAreaCapture *pAreaTrigger = pTFVictim->GetControlPointStandingOn();
-				if ( pAreaTrigger )
+				if ( pTFVictim )
 				{
-					CTeamControlPoint *pCP = pAreaTrigger->GetControlPoint();
-					if ( pCP )
+					// could the attacker see this player when the charge started?
+					if ( m_Shared.m_hPlayersVisibleAtChargeStart.Find( pTFVictim ) == m_Shared.m_hPlayersVisibleAtChargeStart.InvalidIndex() )
 					{
-						if ( pCP->GetOwner() == GetTeamNumber() )
+						AwardAchievement( ACHIEVEMENT_TF_DEMOMAN_KILL_PLAYER_YOU_DIDNT_SEE );
+					}
+				}
+			}
+
+			// Demoman achievement:  Kill at least 3 players capping or pushing the cart with the same detonation
+			CTriggerAreaCapture *pAreaTrigger = pTFVictim->GetControlPointStandingOn();
+			if ( pAreaTrigger )
+			{
+				CTeamControlPoint *pCP = pAreaTrigger->GetControlPoint();
+				if ( pCP )
+				{
+					if ( pCP->GetOwner() == GetTeamNumber() )
+					{
+						if ( GetActiveTFWeapon() && ( GetActiveTFWeapon()->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER ) )
 						{
-							if ( GetActiveTFWeapon() && ( GetActiveTFWeapon()->GetWeaponID() == TF_WEAPON_PIPEBOMBLAUNCHER ) )
+							// Add victim to our list
+							int iIndex = m_Cappers.Find( pTFVictim->GetUserID() );
+							if ( iIndex != m_Cappers.InvalidIndex() )
 							{
-								// Add victim to our list
-								int iIndex = m_Cappers.Find( pTFVictim->GetUserID() );
-								if ( iIndex != m_Cappers.InvalidIndex() )
+								// they're already in our list
+								m_Cappers[iIndex] = gpGlobals->curtime;
+							}
+							else
+							{
+								// we need to add them
+								m_Cappers.Insert( pTFVictim->GetUserID(), gpGlobals->curtime );
+							}
+							// Did we get three?
+							if ( m_Cappers.Count() >= 3 )
+							{
+								// Traverse the list, comparing the recorded time to curtime
+								int iHitCount = 0;
+								FOR_EACH_MAP_FAST ( m_Cappers, cIndex )
 								{
-									// they're already in our list
-									m_Cappers[iIndex] = gpGlobals->curtime;
-								}
-								else
-								{
-									// we need to add them
-									m_Cappers.Insert( pTFVictim->GetUserID(), gpGlobals->curtime );
-								}
-								// Did we get three?
-								if ( m_Cappers.Count() >= 3 )
-								{
-									// Traverse the list, comparing the recorded time to curtime
-									int iHitCount = 0;
-									FOR_EACH_MAP_FAST ( m_Cappers, cIndex )
+									// For each match, increment counter
+									if ( gpGlobals->curtime <= m_Cappers[cIndex] + 0.1f )
 									{
-										// For each match, increment counter
-										if ( gpGlobals->curtime <= m_Cappers[cIndex] + 0.1f )
-										{
-											iHitCount++;
-										}
-										else
-										{
-											m_Cappers.Remove( cIndex );
-										}
-										
-										// If we hit 3, award and purge the group
-										if ( iHitCount >= 3 )
-										{
-											AwardAchievement( ACHIEVEMENT_TF_DEMOMAN_KILL_X_CAPPING_ONEDET );
-											m_Cappers.RemoveAll();
-										}					
+										iHitCount++;
 									}
+									else
+									{
+										m_Cappers.Remove( cIndex );
+									}
+										
+									// If we hit 3, award and purge the group
+									if ( iHitCount >= 3 )
+									{
+										AwardAchievement( ACHIEVEMENT_TF_DEMOMAN_KILL_X_CAPPING_ONEDET );
+										m_Cappers.RemoveAll();
+									}					
 								}
 							}
 						}
-						// Kill players defending "x" times
-						else
+					}
+					// Kill players defending "x" times
+					else
+					{
+						// If we're able to cap the point...
+						if ( TeamplayGameRules()->TeamMayCapturePoint( GetTeamNumber(), pCP->GetPointIndex() ) && 
+							TeamplayGameRules()->PlayerMayCapturePoint( this, pCP->GetPointIndex() ) )
 						{
-							// If we're able to cap the point...
-							if ( TeamplayGameRules()->TeamMayCapturePoint( GetTeamNumber(), pCP->GetPointIndex() ) && 
-								TeamplayGameRules()->PlayerMayCapturePoint( this, pCP->GetPointIndex() ) )
-							{
-								AwardAchievement( ACHIEVEMENT_TF_DEMOMAN_KILL_X_DEFENDING );
-							}
+							AwardAchievement( ACHIEVEMENT_TF_DEMOMAN_KILL_X_DEFENDING );
 						}
 					}
 				}
@@ -15275,7 +15274,7 @@ void CTFPlayer::DeathSound( const CTakeDamageInfo &info )
 
 	if ( m_bGoingFeignDeath  )
 	{
-		bool bDisguised = m_Shared.InCond( TF_COND_DISGUISED ) && (m_Shared.GetDisguiseTeam() == GetTeamNumber());
+		bool bDisguised = m_Shared.InCond( TF_COND_DISGUISED );
 		if ( bDisguised )
 		{
 			// Use our disguise class, if we have one and will drop a disguise class corpse.
@@ -15746,8 +15745,8 @@ void CTFPlayer::FeignDeath( const CTakeDamageInfo& info, bool bDeathnotice )
 	// Dead Ringer death removes Powerup Rune for authenticity
 	DropRune();
 
-	// Only drop disguised ragdoll & weapon if we're disguised as a teammate.
-	bool bDisguised = m_Shared.InCond( TF_COND_DISGUISED ) && (m_Shared.GetDisguiseTeam() == GetTeamNumber());
+	// Only drop disguised ragdoll & weapon if we're disguised.
+	bool bDisguised = m_Shared.InCond( TF_COND_DISGUISED );
 
 	// We want the ragdoll to burn if the player was burning and was not disguised as a pyro.
 	bool bBurning = m_Shared.InCond( TF_COND_BURNING ) && (!bDisguised || (TF_CLASS_PYRO != m_Shared.GetDisguiseClass()));
@@ -19128,11 +19127,8 @@ void CTFPlayer::DoTauntAttack( void )
 			DispatchRPSEffect( m_hHighFivePartner.Get(), s_pszTauntRPSParticleNames[iReceiver] );
 
 			// setup time to kill the opposing team loser
-			if ( GetTeamNumber() != m_hHighFivePartner->GetTeamNumber() )
-			{
-				m_iTauntAttack = TAUNTATK_RPS_KILL;
-				m_flTauntAttackTime = m_flTauntRemoveTime - 1.2f;
-			}
+			m_iTauntAttack = TAUNTATK_RPS_KILL;
+			m_flTauntAttackTime = m_flTauntRemoveTime - 1.2f;
 
 			IGameEvent *event = gameeventmanager->CreateEvent( "rps_taunt_event" );
 			if ( event )

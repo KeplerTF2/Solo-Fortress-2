@@ -2765,7 +2765,7 @@ public:
 				}
 				
 				// Use the Spies target if disguised and we're on different teams
-				if ( pTFPlayer && pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && pTFPlayer->GetTeamNumber() != GetLocalPlayerTeam() )
+				if ( pTFPlayer && pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) )//&& pTFPlayer->GetTeamNumber() != GetLocalPlayerTeam() )
 				{
 					pTFPlayer = pTFPlayer->m_Shared.GetDisguiseTarget();
 					if ( pTFPlayer && pTFPlayer->m_Shared.GetDisguiseWeapon() )
@@ -4418,6 +4418,8 @@ void C_TFPlayer::OnDataChanged( DataUpdateType_t updateType )
 			int nTeamNumber = GetTeamNumber();
 			if ( IsPlayerClass( TF_CLASS_SPY ) && m_Shared.InCond( TF_COND_DISGUISED ) )
 			{
+				nTeamNumber = m_Shared.GetDisguiseTeam();
+				/*
 				if ( !IsLocalPlayer() && GetTeamNumber() == GetLocalPlayerTeam() ) // Always display own team colors even when disguised, unless it's you (same rules as uber skin)
 				{
 					nTeamNumber = GetLocalPlayerTeam();
@@ -4426,6 +4428,7 @@ void C_TFPlayer::OnDataChanged( DataUpdateType_t updateType )
 				{
 					nTeamNumber = m_Shared.GetDisguiseTeam();
 				}
+				*/
 			}
 
 			if ( nTeamNumber == TF_TEAM_RED )
@@ -4948,7 +4951,7 @@ void C_TFPlayer::InitInvulnerableMaterial( void )
 
 	int iVisibleTeam = GetTeamNumber();
 	// if this player is disguised and on the other team, use disguise team
-	if ( m_Shared.InCond( TF_COND_DISGUISED ) && !InSameTeam( pLocalPlayer ) )
+	if ( m_Shared.InCond( TF_COND_DISGUISED ) )//&& !InSameTeam( pLocalPlayer ) )
 	{
 		iVisibleTeam = m_Shared.GetDisguiseTeam();
 	}
@@ -5310,6 +5313,10 @@ bool C_TFPlayer::IsEnemyPlayer( void )
 	if ( !pLocalPlayer )
 		return false;
 
+	if (pLocalPlayer == this)
+		return false;
+
+	/*
 	int iTeam = pLocalPlayer->GetTeamNumber();
 
 	// if we are coaching, use the team of the student
@@ -5331,6 +5338,8 @@ bool C_TFPlayer::IsEnemyPlayer( void )
 	}
 
 	return false;
+	*/
+	return true;
 }
 
 //-----------------------------------------------------------------------------
@@ -6751,14 +6760,15 @@ float C_TFPlayer::GetEffectiveInvisibilityLevel( void )
 {
 	float flPercentInvisible = GetPercentInvisible();
 
+	C_TFPlayer* pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
+
 	// Crude way to limit Halloween spell
 	bool bHalloweenSpellStealth = TFGameRules()->IsHalloweenScenario( CTFGameRules::HALLOWEEN_SCENARIO_HIGHTOWER ) && m_Shared.InCond( TF_COND_STEALTHED_USER_BUFF );
 	bool bLimitedInvis = !IsEnemyPlayer() || bHalloweenSpellStealth;
 
 
-	// If this is a teammate of the local player or viewer is observer,
-	// dont go above a certain max invis
-	if ( bLimitedInvis )
+	// If this is us, do reduced invis
+	if ( this == pLocalPlayer )
 	{
 		float flMax = tf_teammate_max_invis.GetFloat();
 		if ( flPercentInvisible > flMax )
@@ -6770,8 +6780,6 @@ float C_TFPlayer::GetEffectiveInvisibilityLevel( void )
 	{
 		// If this player just killed me, show them slightly
 		// less than full invis in the deathcam and freezecam
-
-		C_TFPlayer *pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
 
 		if ( pLocalPlayer )
 		{
@@ -7002,7 +7010,7 @@ void C_TFPlayer::UpdateIDTarget()
 	if ( tr.m_pEnt && tr.m_pEnt->IsPlayer() )
 	{
 		// It's okay to start solid against enemies because we sometimes press right against them
-		bIsEnemyPlayer = GetTeamNumber() != tr.m_pEnt->GetTeamNumber();
+		bIsEnemyPlayer = true;// GetTeamNumber() != tr.m_pEnt->GetTeamNumber();
 	}
 
 	if ( ( !tr.startsolid || bIsEnemyPlayer ) && tr.DidHitNonWorldEntity() )
@@ -7659,8 +7667,8 @@ bool C_TFPlayer::BRenderAsZombie( bool bWeaponsCheck /*= false */  )
 		// When disguised, our teammates will see us with a mask.
 		// Don't show us as a zombie in that state, because the zombie parts
 		// (like every other cosmetic) disappear.
-		if ( !IsEnemyPlayer() )
-			return false;
+		//if ( !IsEnemyPlayer() )
+		//	return false;
 
 		// Ditto when we are disguised as an enemy spy.  We always use the mask
 		// in that case and hide cosmetics
@@ -7696,7 +7704,7 @@ int C_TFPlayer::GetSkin()
 	{
 		iVisibleTeam = ( iVisibleTeam == TF_TEAM_RED ? TF_TEAM_BLUE : TF_TEAM_RED );
 	}
-	else if ( m_Shared.InCond( TF_COND_DISGUISED ) && IsEnemyPlayer() )
+	else if ( m_Shared.InCond( TF_COND_DISGUISED ) && this != pLocalPlayer)
 	{
 		iVisibleTeam = m_Shared.GetDisguiseTeam();
 	}
@@ -8034,6 +8042,9 @@ void C_TFPlayer::CalculateVisionUsingCurrentFlags( void )
 //-----------------------------------------------------------------------------
 void C_TFPlayer::CreateSaveMeEffect( MedicCallerType nType /*= CALLER_TYPE_NORMAL*/ )
 {
+	// Return early, we don't have teammates
+	return;
+
 	// Don't create them for the local player in first-person view.
 	if ( IsLocalPlayer() && InFirstPersonView() )
 		return;
@@ -9649,13 +9660,16 @@ void C_TFPlayer::GetTargetIDDataString( bool bIsDisguised, OUT_Z_BYTECAP(iMaxLen
 	// since the conditions below are tricky.
 	sDataString[0] = 0;
 
+	C_TFPlayer* pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
+
 	if ( bIsDisguised )
 	{
 		if ( !IsEnemyPlayer() )
 		{
+
 			// The target is a disguised friendly spy.  They appear to the player with no disguise.  Add the disguise
 			// team & class to the target ID element.
-			bool bDisguisedAsEnemy = ( m_Shared.GetDisguiseTeam() != GetTeamNumber() );
+			bool bDisguisedAsEnemy = ( this != pLocalPlayer);
 			const wchar_t *wszAlignment = g_pVGuiLocalize->Find( bDisguisedAsEnemy ? "#TF_enemy" : "#TF_friendly" );
 
 			int classindex = m_Shared.GetDisguiseClass();
@@ -9695,14 +9709,13 @@ void C_TFPlayer::GetTargetIDDataString( bool bIsDisguised, OUT_Z_BYTECAP(iMaxLen
 			g_pVGuiLocalize->ConstructString( sDataString, iMaxLenInBytes, g_pVGuiLocalize->Find( "#TF_playerid_mediccharge" ), 1, wszChargeLevel );
 		}
 	}
-	else if ( bIsDisguised && (m_Shared.GetDisguiseClass() == TF_CLASS_MEDIC) && IsEnemyPlayer() )
+	else if ( bIsDisguised && (m_Shared.GetDisguiseClass() == TF_CLASS_MEDIC) && this != pLocalPlayer )
 	{
 		// Show a fake charge level for a disguised enemy medic.
 		g_pVGuiLocalize->ConstructString( sDataString, iMaxLenInBytes, g_pVGuiLocalize->Find( "#TF_playerid_mediccharge" ), 1, L"0" );
 	}
 	else
 	{
-		C_TFPlayer *pLocalPlayer = C_TFPlayer::GetLocalTFPlayer();
 		if ( pLocalPlayer && pLocalPlayer->IsPlayerClass( TF_CLASS_MEDIC ) )
 		{
 			CTFWeaponBase *pTFWeapon = GetActiveTFWeapon();
