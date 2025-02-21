@@ -5017,10 +5017,6 @@ void CTFWeaponBase::ApplyOnHitAttributes( CBaseEntity *pVictimBaseEntity, CTFPla
 
 	//		pVictim->EmitSound( "Weapon_DRG_Wrench.RevealSpy" );
 		}
-
-		// On hit attributes don't work when you shoot disguised spies
-		if ( pVictim->m_Shared.InCond( TF_COND_DISGUISED ) )
-			return;
 	}
 
 	// Or from burn damage

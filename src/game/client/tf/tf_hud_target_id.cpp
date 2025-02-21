@@ -97,11 +97,13 @@ bool ShouldHealthBarBeVisible( CBaseEntity *pTarget, CTFPlayer *pLocalPlayer )
 	if ( pLocalPlayer->IsPlayerClass( TF_CLASS_SPY ) )
 		return true;
 
+	/*
 	if ( pLocalPlayer->InSameTeam( pTarget ) )
 		return true;
 
 	if ( pLocalPlayer->InSameDisguisedTeam( pTarget ) )
 		return true;
+	*/
 
 	int iSeeEnemyHealth = 0;
 	CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pLocalPlayer, iSeeEnemyHealth, see_enemy_health )
@@ -376,7 +378,7 @@ bool CTargetID::IsValidIDTarget( int nEntIndex, float flOldTargetRetainFOV, floa
 			int iHideEnemyHealth = 0;
 			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pLocalTFPlayer, iHideEnemyHealth, hide_enemy_health );
 
-			bool bInSameTeam = pLocalTFPlayer->InSameDisguisedTeam( pEnt );	
+			bool bInSameTeam = false; // pLocalTFPlayer->InSameDisguisedTeam(pEnt);
 			bool bSpy = pLocalTFPlayer->IsPlayerClass( TF_CLASS_SPY ) && iHideEnemyHealth == 0;
 
 			if ( TFGameRules() && TFGameRules()->IsMannVsMachineMode() )
@@ -452,7 +454,7 @@ bool CTargetID::IsValidIDTarget( int nEntIndex, float flOldTargetRetainFOV, floa
 					flNewTargetRetainFOV = fInterp * 13.0f + 0.75f;
 				}
 
-				bReturn = ( bSpectator || pLocalTFPlayer->InSameTeam( pEnt ) || ( ( bInSameTeam || bSpy || iSeeEnemyHealth ) && !bStealthed ) );
+				bReturn = ( bSpectator || ( ( bSpy || iSeeEnemyHealth ) && !bStealthed ) );
 			}
 
 
@@ -480,9 +482,11 @@ bool CTargetID::IsValidIDTarget( int nEntIndex, float flOldTargetRetainFOV, floa
 					m_pFloatingHealthIcon = CFloatingHealthIcon::AddFloatingHealthIcon( pEnt );
 				}
 			}
-			else if ( pEnt->IsBaseObject() && ( bInSameTeam || bSpy ) )
+			else if ( pEnt->IsBaseObject() )
 			{
-				bReturn = true;
+				CBaseObject* pObject = dynamic_cast<CBaseObject*>(pEnt);
+				if (pObject->GetBuilder() == pLocalTFPlayer)
+					bReturn = true;
 			}
 			else if ( pEnt->IsVisibleToTargetID() )
 			{
