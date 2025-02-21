@@ -184,8 +184,6 @@ public:
 	virtual float	GetProjectileGravity( void );
 	virtual bool	IsViewModelFlipped( void );
 
-	void IncrementAmmo(void);
-
 	virtual void	ItemPostFrame( void );
 	virtual void	ModifyProjectile( CBaseEntity* pProj );
 	virtual void	WeaponRegenerate( void );

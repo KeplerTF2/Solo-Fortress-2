@@ -362,10 +362,10 @@ bool CTFGasManager::ShouldCollide( CBaseEntity *pEnt ) const
 	if ( !pEnt->IsPlayer() )
 		return false;
 
-	if ( pEnt->GetTeamNumber() == GetTeamNumber() )
+	if ( TFGameRules() && TFGameRules()->IsTruceActive() )
 		return false;
 
-	if ( TFGameRules() && TFGameRules()->IsTruceActive() )
+	if (pEnt == GetOwnerEntity())
 		return false;
 
 	if ( m_Touched.Find( pEnt ) != m_Touched.InvalidIndex() )

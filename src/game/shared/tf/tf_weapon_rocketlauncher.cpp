@@ -675,53 +675,8 @@ CTFCrossbow::CTFCrossbow()
 	m_bReloadsSingly = false;
 }
 
-void CTFCrossbow::IncrementAmmo(void)
-{
-	CTFPlayer* pPlayer = GetTFPlayerOwner();
-
-	// If we have ammo, remove ammo and add it to clip
-	if (!m_bReloadedThroughAnimEvent)
-	{
-		if (IsEnergyWeapon())
-		{
-			Energy_Recharge();
-		}
-		else if (!CheckReloadMisfire())
-		{
-			int iAmmoCount = pPlayer->GetAmmoCount(m_iPrimaryAmmoType);
-			if (pPlayer && iAmmoCount > 0)
-			{
-				int iAmmoToReload = MIN( GetMaxClip1() - m_iClip1, iAmmoCount);
-				m_iClip1 += iAmmoToReload;
-				pPlayer->RemoveAmmo(iAmmoToReload, m_iPrimaryAmmoType);
-			}
-		}
-	}
-}
-
 bool CTFCrossbow::Holster( CBaseCombatWeapon *pSwitchingTo )
 {
-	// Allow Crossbow to silently reload like the flaregun
-	if (m_iClip1 < 4 )
-	{
-		// These Values need to match the anim times since all this stuff is actually driven by animation sequence time in the base code
-		float flFireDelay = ApplyFireDelay( m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_flTimeFireDelay );
-
-		float flReloadTime = m_pWeaponInfo->GetWeaponData( m_iWeaponMode ).m_flTimeReload;
-		CALL_ATTRIB_HOOK_FLOAT( flReloadTime, mult_reload_time );
-		CALL_ATTRIB_HOOK_FLOAT( flReloadTime, mult_reload_time_hidden );
-		CALL_ATTRIB_HOOK_FLOAT( flReloadTime, fast_reload );
-
-		float flIdleTime = GetLastPrimaryAttackTime() + flFireDelay + flReloadTime;
-		if ( GetWeaponIdleTime() < flIdleTime )
-		{
-			SetWeaponIdleTime( flIdleTime );
-			m_flNextPrimaryAttack = flIdleTime;
-		}
-
-		IncrementAmmo();
-	}
-
 	return BaseClass::Holster( pSwitchingTo );
 }
 //-----------------------------------------------------------------------------

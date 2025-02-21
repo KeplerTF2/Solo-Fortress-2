@@ -180,7 +180,7 @@ bool INextBot::IsEnemy( const CBaseEntity *them ) const
 	if ( them == NULL )
 		return false;
 		
-	// this is not strictly correct, as spectators are not enemies
+	// Everyone is an enemy
 	return true;
 }
 
@@ -194,7 +194,8 @@ bool INextBot::IsFriend( const CBaseEntity  *them ) const
 	if ( them == NULL )
 		return false;
 		
-	return const_cast< INextBot * >( this )->GetEntity()->GetTeamNumber() == them->GetTeamNumber();
+	// No one is a friend
+	return false;
 }
 
 

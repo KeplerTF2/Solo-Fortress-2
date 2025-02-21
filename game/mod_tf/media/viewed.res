@@ -6,7 +6,7 @@
 	}
 	"itemtest"
 	{
-		"viewed"		"53"
+		"viewed"		"55"
 	}
 	"kotf_atomizer_a3"
 	{
@@ -18,6 +18,6 @@
 	}
 	"ffa_atomizer_a1"
 	{
-		"viewed"		"4"
+		"viewed"		"7"
 	}
 }
