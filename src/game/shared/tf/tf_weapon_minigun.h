@@ -177,6 +177,7 @@ private:
 	float	m_flLastAmmoDrainTime;
 
 	bool	m_bAttack3Down;
+	bool    m_bLastShotSuccessful;
 
 #ifdef CLIENT_DLL
 	void StartBrassEffect();

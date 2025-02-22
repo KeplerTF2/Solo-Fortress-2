@@ -547,11 +547,18 @@ void CTFFlareGun_Revenge::ChargePostFrame( void )
 					m_fLastExtinguishTime = gpGlobals->curtime;
 
 #ifdef GAME_DLL
-					// Make sure the team isn't burning themselves to earn crits
-					if ( pBurner && pBurner->GetTeamNumber() != pOwner->GetTeamNumber() )
+					if ( pBurner )
 					{
 						// Grant revenge crits
-						pOwner->m_Shared.SetRevengeCrits( pOwner->m_Shared.GetRevengeCrits() + 1 );
+						int iRevengeCrits = pOwner->m_Shared.GetRevengeCrits();
+						int iNewRevengeCrits;
+
+						if (iRevengeCrits == 0)
+							iNewRevengeCrits = iRevengeCrits + 1;
+						else
+							iNewRevengeCrits = iRevengeCrits - 1;
+
+						pOwner->m_Shared.SetRevengeCrits(iNewRevengeCrits);
 
 						// Return health to the Pyro.
 						int iRestoreHealthOnExtinguish = 0;
@@ -587,16 +594,32 @@ extern void ExtinguishPlayer( CEconEntity *pExtinguisher, CTFPlayer *pOwner, CTF
 
 bool CTFFlareGun_Revenge::ExtinguishPlayerInternal( CTFPlayer *pTarget, CTFPlayer *pOwner )
 {
-	if ( pTarget->GetTeamNumber() == pOwner->GetTeamNumber() )
+	if ( pTarget->m_Shared.InCond( TF_COND_BURNING ) )
 	{
-		if ( pTarget->m_Shared.InCond( TF_COND_BURNING ) )
-		{
 #ifdef GAME_DLL
-			ExtinguishPlayer( this, pOwner, pTarget, GetName() );
+		// We need to deal damage
+		int iDamageType = GetDamageType();
+
+		// Prevent the normal push force cause we are going to add it
+		iDamageType |= DMG_PREVENT_PHYSICS_FORCE;
+
+		// Do we have crits? If so, use one up and apply it
+		int iRevengeCrits = pOwner->m_Shared.GetRevengeCrits();
+		if (iRevengeCrits > 0)
+		{
+			iDamageType |= DMG_CRITICAL;
+		}
+
+		// Damage the player
+		CTakeDamageInfo info(pOwner, pOwner, this, 30, iDamageType, TF_DMG_CUSTOM_FLARE_PELLET);
+		pTarget->TakeDamage(info);
+
+		// Extinguish after so we can deal fire damage, but not actually set them on fire
+		ExtinguishPlayer(this, pOwner, pTarget, GetName());
+
 #endif // GAME_DLL
 
-			return true;
-		}
+		return true;
 	}
 
 	return false;

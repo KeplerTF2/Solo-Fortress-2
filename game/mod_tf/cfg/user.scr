@@ -32,7 +32,7 @@
 
 
 // Half-Life User Info Configuration Layout Script (stores last settings chosen, too)
-// File generated:  Thu Feb 20 12:14:51 AM
+// File generated:  Sat Feb 22 12:16:19 AM
 //
 //
 // Cvar	-	Setting
@@ -262,7 +262,7 @@ DESCRIPTION INFO_OPTIONS
 		"#TF_sniperbell"
 		"#Tooltip_sniperbell"
 		{ BOOL }
-		{ "0" }
+		{ "1" }
 	}
 
 	"category3"

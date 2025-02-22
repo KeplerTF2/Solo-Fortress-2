@@ -100,6 +100,8 @@ CTFMinigun::CTFMinigun()
 #endif
 	m_bAttack3Down = false;
 
+	m_bLastShotSuccessful = false;
+
 	WeaponReset();
 }
 
@@ -320,6 +322,16 @@ void CTFMinigun::SharedAttack()
 #endif
 				m_flNextSecondaryAttack = m_flNextPrimaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + 0.1;
 
+				// Add an additional delay to prevent spam from the Natascha
+				if (m_bLastShotSuccessful)
+				{
+					float flFireDelay = ApplyFireDelay(m_pWeaponInfo->GetWeaponData(m_iWeaponMode).m_flTimeFireDelay);
+					CALL_ATTRIB_HOOK_FLOAT_ON_OTHER(pPlayer, flFireDelay, hwn_mult_postfiredelay);
+
+					m_flNextSecondaryAttack = m_flNextPrimaryAttack = m_flTimeWeaponIdle = gpGlobals->curtime + flFireDelay;
+
+					m_bLastShotSuccessful = false;
+				}
 			}
 			else if ( pPlayer->GetAmmoCount(m_iPrimaryAmmoType) <= 0 )
 			{
@@ -348,15 +360,20 @@ void CTFMinigun::SharedAttack()
 					nAmmo = pPlayer->GetAmmoCount( m_iPrimaryAmmoType );
 				}
 #endif
+				int nPrevAmmo = pPlayer->GetAmmoCount(m_iPrimaryAmmoType);
 
 				// Only fire if we're actually shooting
 				BaseClass::PrimaryAttack();		// fire and do timers
 				
+				if (nPrevAmmo != pPlayer->GetAmmoCount(m_iPrimaryAmmoType))
+					m_bLastShotSuccessful = true;
+
 #ifdef CLIENT_DLL
 				if ( prediction->IsFirstTimePredicted() && 
 					 C_BasePlayer::GetLocalPlayer() == pPlayer &&
 					 nAmmo != pPlayer->GetAmmoCount( m_iPrimaryAmmoType ) ) // did PrimaryAttack() fire a shot? (checking our ammo to find out)
 				{
+
 					m_nShotsFired++;
 					if ( m_nShotsFired == 1000 ) // == and not >= so we don't keep awarding this every shot after it's achieved
 					{
@@ -367,6 +384,7 @@ void CTFMinigun::SharedAttack()
 						haptics->ProcessHapticEvent(2,"Weapons","minigun_fire");
 				}
 #endif
+
 				CalcIsAttackCritical();
 				m_bCritShot = IsCurrentAttackACrit();
 				pPlayer->DoAnimationEvent( PLAYERANIMEVENT_ATTACK_PRIMARY );
@@ -416,17 +434,17 @@ void CTFMinigun::SharedAttack()
 
 			if ( m_iWeaponMode == TF_WEAPON_PRIMARY_MODE )
 			{
-				if ( pPlayer->GetAmmoCount(m_iPrimaryAmmoType) > 0 )
+				if (pPlayer->GetAmmoCount(m_iPrimaryAmmoType) > 0)
 				{
 #ifdef GAME_DLL
 					pPlayer->ClearWeaponFireScene();
-					pPlayer->SpeakWeaponFire( MP_CONCEPT_FIREMINIGUN );
+					pPlayer->SpeakWeaponFire(MP_CONCEPT_FIREMINIGUN);
 #endif
-					SetWeaponState( AC_STATE_FIRING );
+					SetWeaponState(AC_STATE_FIRING);
 				}
 				else
 				{
-					SetWeaponState( AC_STATE_DRYFIRE );
+					SetWeaponState(AC_STATE_DRYFIRE);
 				}
 			}
 
