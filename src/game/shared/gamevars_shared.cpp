@@ -41,12 +41,14 @@ ConVar mp_allowspectators(
 	FCVAR_REPLICATED,
 	"toggles whether the server allows spectator mode or not" );
 
+/*
 ConVar friendlyfire(
 	"mp_friendlyfire",
 	"0",
 	FCVAR_REPLICATED | FCVAR_NOTIFY,
 	"Allows team members to injure other members of their team"
 	);
+*/
 
 ConVar mp_fadetoblack( 
 	"mp_fadetoblack", 

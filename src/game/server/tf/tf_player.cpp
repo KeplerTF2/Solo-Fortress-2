@@ -232,6 +232,8 @@ ConVar tf_highfive_debug( "tf_highfive_debug", "0", FCVAR_NONE, "Turns on some c
 
 ConVar tf_test_teleport_home_fx( "tf_test_teleport_home_fx", "0", FCVAR_CHEAT );
 
+ConVar tf_health_on_kill("tf_health_on_kill", "0.2", FCVAR_CHEAT, "Percentage of max health rewarded back to the player for any kill.");
+
 ConVar tf_halloween_giant_health_scale( "tf_halloween_giant_health_scale", "10", FCVAR_CHEAT );
 
 ConVar tf_grapplinghook_los_force_detach_time( "tf_grapplinghook_los_force_detach_time", "1", FCVAR_CHEAT );
@@ -11559,6 +11561,7 @@ void CTFPlayer::OnKilledOther_Effects( CBaseEntity *pVictim, const CTakeDamageIn
 
 	int iRestoreHealthToPercentageOnKill = 0;
 	CALL_ATTRIB_HOOK_INT_ON_OTHER( pWeapon, iRestoreHealthToPercentageOnKill, restore_health_on_kill );
+	iRestoreHealthToPercentageOnKill += (int)(tf_health_on_kill.GetFloat() * 100);
 
 	if ( iRestoreHealthToPercentageOnKill > 0 )
 	{
@@ -20064,17 +20067,17 @@ void CTFPlayer::NoteSpokeVoiceCommand( const char *pszScenePlayed )
 	}
 }
 
-extern ConVar friendlyfire;
+//extern ConVar friendlyfire;
 
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
 bool CTFPlayer::WantsLagCompensationOnEntity( const CBasePlayer *pPlayer, const CUserCmd *pCmd, const CBitVec<MAX_EDICTS> *pEntityTransmitBits ) const
 {
-	//bool bIsMedic = false;
+	/*
+	bool bIsMedic = false;
 	bool bIsMeleeingTeamMate = false;
 
-	/*
 	if ( !friendlyfire.GetBool() )
 	{
 		//Do Lag comp on medics trying to heal team mates.

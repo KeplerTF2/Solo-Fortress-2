@@ -523,6 +523,21 @@ CBaseEntity* CTFBat_Wood::CreateBall( void )
 	return pBall;
 }
 
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+float CTFBat::GetInitialAfterburnDuration() const
+{
+	int iAddBurningDamageType = 0;
+	CALL_ATTRIB_HOOK_INT(iAddBurningDamageType, set_dmgtype_ignite);
+	if (iAddBurningDamageType)
+	{
+		return 7.5f;
+	}
+
+	return BaseClass::GetInitialAfterburnDuration();
+}
+
 // -- SERVER ONLY
 #endif
 
@@ -1278,6 +1293,8 @@ void CTFBall_Ornament::VPhysicsCollisionThink( void )
 
 	Explode( &pTrace, DMG_BLAST|DMG_PREVENT_PHYSICS_FORCE );
 }
+
+
 
 //-----------------------------------------------------------------------------
 // Purpose: 

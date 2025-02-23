@@ -18690,7 +18690,7 @@ static bool BIgnoreConvarChangeInPVEMode(void)
 // tags are recalculated and uploaded to the master server when the convar is changed.
 convar_tags_t convars_to_check_for_tags[] =
 {
-	{ "mp_friendlyfire", "friendlyfire", NULL },
+//	{ "mp_friendlyfire", "friendlyfire", NULL },
 	{ "tf_birthday", "birthday", NULL },
 	{ "mp_respawnwavetime", "respawntimes", NULL },
 	{ "mp_fadetoblack", "fadetoblack", NULL },

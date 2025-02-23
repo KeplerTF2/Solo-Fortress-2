@@ -44,6 +44,10 @@ public:
 	virtual void		Smack( void );
 	virtual void		PlayDeflectionSound( bool bPlayer );
 
+#ifdef GAME_DLL
+	virtual float GetInitialAfterburnDuration() const OVERRIDE;
+#endif
+
 private:
 
 	CTFBat( const CTFBat & ) {}

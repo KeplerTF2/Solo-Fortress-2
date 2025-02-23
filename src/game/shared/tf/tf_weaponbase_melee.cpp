@@ -634,43 +634,38 @@ bool CTFWeaponBaseMelee::OnSwingHit( trace_t &trace )
 			pPlayer->EmitSound( filter, pPlayer->entindex(), "Player.TaggedOtherIT" );
 		}
 
-		if ( pTargetPlayer->InSameTeam( pPlayer ) || pTargetPlayer->m_Shared.GetDisguiseTeam() == GetTeamNumber() )
+		int iSpeedBuffOnHit = 0;
+		CALL_ATTRIB_HOOK_INT( iSpeedBuffOnHit, speed_buff_ally );
+		if ( iSpeedBuffOnHit > 0 && trace.m_pEnt )
 		{
-			int iSpeedBuffOnHit = 0;
-			CALL_ATTRIB_HOOK_INT( iSpeedBuffOnHit, speed_buff_ally );
-			if ( iSpeedBuffOnHit > 0 && trace.m_pEnt )
+			//pTargetPlayer->m_Shared.AddCond( TF_COND_SPEED_BOOST, 2.f );
+			pPlayer->m_Shared.AddCond( TF_COND_SPEED_BOOST, 3.6f );		// give the soldier a bit of additional time to allow them to keep up better with faster classes
+
+			EconEntity_OnOwnerKillEaterEvent( this, pPlayer, pTargetPlayer, kKillEaterEvent_TeammatesWhipped );	// Strange
+		}
+
+		// Give health to teammates on hit
+		int nGiveHealthOnHit = 0;
+		CALL_ATTRIB_HOOK_INT( nGiveHealthOnHit, add_give_health_to_teammate_on_hit );
+		if ( nGiveHealthOnHit != 0 )
+		{
+			// Always keep at least 1 health for ourselves
+			nGiveHealthOnHit = Min( pPlayer->GetHealth() - 1, nGiveHealthOnHit );
+			int nHealthGiven = pTargetPlayer->TakeHealth( nGiveHealthOnHit, DMG_GENERIC );
+
+			if ( nHealthGiven > 0 )
 			{
-				pTargetPlayer->m_Shared.AddCond( TF_COND_SPEED_BOOST, 2.f );
-				pPlayer->m_Shared.AddCond( TF_COND_SPEED_BOOST, 3.6f );		// give the soldier a bit of additional time to allow them to keep up better with faster classes
-
-				EconEntity_OnOwnerKillEaterEvent( this, pPlayer, pTargetPlayer, kKillEaterEvent_TeammatesWhipped );	// Strange
-			}
-
-			// Give health to teammates on hit
-			int nGiveHealthOnHit = 0;
-			CALL_ATTRIB_HOOK_INT( nGiveHealthOnHit, add_give_health_to_teammate_on_hit );
-			if ( nGiveHealthOnHit != 0 )
-			{
-				// Always keep at least 1 health for ourselves
-				nGiveHealthOnHit = Min( pPlayer->GetHealth() - 1, nGiveHealthOnHit );
-				int nHealthGiven = pTargetPlayer->TakeHealth( nGiveHealthOnHit, DMG_GENERIC );
-
-				if ( nHealthGiven > 0 )
-				{
-					// Subtract health given from my own
-					CTakeDamageInfo info( pPlayer, pPlayer, this, nHealthGiven, DMG_GENERIC | DMG_PREVENT_PHYSICS_FORCE );
-					pPlayer->TakeDamage( info );
-				}
+				// Subtract health given from my own
+				CTakeDamageInfo info( pPlayer, pPlayer, this, nHealthGiven, DMG_GENERIC | DMG_PREVENT_PHYSICS_FORCE );
+				pPlayer->TakeDamage( info );
 			}
 		}
-		else
+
+		float flSpeedBoostOnHitEnemy = 0.f;
+		CALL_ATTRIB_HOOK_FLOAT( flSpeedBoostOnHitEnemy, speed_boost_on_hit_enemy );
+		if ( flSpeedBoostOnHitEnemy > 0 && trace.m_pEnt )
 		{
-			float flSpeedBoostOnHitEnemy = 0.f;
-			CALL_ATTRIB_HOOK_FLOAT( flSpeedBoostOnHitEnemy, speed_boost_on_hit_enemy );
-			if ( flSpeedBoostOnHitEnemy > 0 && trace.m_pEnt )
-			{
-				pPlayer->m_Shared.AddCond( TF_COND_SPEED_BOOST, flSpeedBoostOnHitEnemy );
-			}
+			pPlayer->m_Shared.AddCond( TF_COND_SPEED_BOOST, flSpeedBoostOnHitEnemy );
 		}
 #endif
 	}

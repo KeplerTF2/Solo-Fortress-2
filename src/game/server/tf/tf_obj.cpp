@@ -1195,6 +1195,7 @@ bool CBaseObject::FindSnapToBuildPos( CBaseObject *pObjectOverride )
 		int nTeamCount = TFTeamMgr()->GetTeamCount();
 		for ( int iTeam = FIRST_GAME_TEAM; iTeam < nTeamCount; ++iTeam )
 		{
+			/*
 			// Hostile attachments look for enemy objects only
 			if ( bHostileAttachment ) 
 			{
@@ -1208,6 +1209,7 @@ bool CBaseObject::FindSnapToBuildPos( CBaseObject *pObjectOverride )
 			{
 				continue;
 			}
+			*/
 
 			CTFTeam *pTeam = ( CTFTeam * )GetGlobalTeam( iTeam );
 			if ( !pTeam )
