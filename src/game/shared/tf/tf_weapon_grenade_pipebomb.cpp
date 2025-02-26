@@ -652,6 +652,9 @@ bool CTFGrenadePipebombProjectile::DetonateStickies()
 		if ( pGrenade->m_bFizzle )
 			continue;
 
+		if ( pGrenade->GetLauncher() == GetLauncher() )
+			continue;
+
 		UTIL_TraceLine( vecOrigin, pGrenade->GetAbsOrigin(), MASK_SOLID_BRUSHONLY, this, COLLISION_GROUP_NONE, &tr );
 		if ( tr.fraction < 1.0 )
 			continue; // No line of sight to the bomb.

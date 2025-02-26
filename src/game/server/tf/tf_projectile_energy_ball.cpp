@@ -313,10 +313,7 @@ void CTFProjectile_EnergyBall::Explode( trace_t *pTrace, CBaseEntity *pOther )
 			// Rocket Specialist
 			CheckForStunOnImpact( pTarget );
 
-			if ( pTarget->GetTeamNumber() != pAttacker->GetTeamNumber() )
-			{
-				RecordEnemyPlayerHit( pTarget, true );
-			}
+			RecordEnemyPlayerHit( pTarget, true );
 		}
 
 		CTakeDamageInfo info( this, pAttacker, m_hLauncher, vec3_origin, vecOrigin, GetDamage(), GetDamageType(), GetDamageCustom() );
