@@ -396,7 +396,7 @@ const char *GetAmmoName( int iAmmoType );
 #define TF_WEAPON_FLAMETHROWER_INTERVAL					0.15f
 #define TF_WEAPON_FLAMETHROWER_ROCKET_INTERVAL			0.8f
 
-#define TF_WEAPON_ZOOM_FOV								20
+#define TF_WEAPON_ZOOM_FOV								40 // 20
 
 //
 // NOTE: Inserting to most or all of the enums in this file will BREAK DEMOS -

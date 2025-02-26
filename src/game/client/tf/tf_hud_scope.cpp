@@ -393,6 +393,8 @@ bool CHudScope::ShouldDraw( void )
 //-----------------------------------------------------------------------------
 void CHudScope::Paint( void )
 {
+	return;
+
 	// We need to update the refraction texture so the scope can refract it
 	UpdateRefractTexture();
 
