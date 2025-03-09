@@ -259,10 +259,13 @@ void CTFProjectile_Arrow::Precache()
 	//PrecacheGibsForModel( festive_healing_arrow_model );
 	PrecacheModel( "effects/arrowtrail_red.vmt" );
 	PrecacheModel( "effects/arrowtrail_blu.vmt" );
+	PrecacheModel( "effects/arrowtrail.vmt" );
+	PrecacheModel( "effects/healingtrail.vmt" );
 	PrecacheModel( "effects/healingtrail_red.vmt" );
 	PrecacheModel( "effects/healingtrail_blu.vmt" );
 	PrecacheModel( CLAW_TRAIL_RED );
 	PrecacheModel( CLAW_TRAIL_BLU );
+	PrecacheModel( "effects/repair_claw_trail.vmt" );
 	PrecacheParticleSystem( CLAW_REPAIR_EFFECT_BLU );
 	PrecacheParticleSystem( CLAW_REPAIR_EFFECT_RED );
 	PrecacheScriptSound( "Weapon_Arrow.ImpactFlesh" );
@@ -802,7 +805,7 @@ void CTFProjectile_Arrow::ArrowTouch( CBaseEntity *pOther )
 		closest_box = set->pHitbox( tr.hitbox );
 	}
 
-	if ( !closest_box )
+	if (!closest_box)
 	{
 		// Locate the hitbox closest to our point of impact on the collision box.
 		Vector position, start, forward;
@@ -1022,6 +1025,26 @@ void CTFProjectile_Arrow::RemoveThink( void )
 //-----------------------------------------------------------------------------
 const char *CTFProjectile_Arrow::GetTrailParticleName( void )
 {
+	// Is player using a custom color?
+	if (GetOwnerPlayer())
+	{
+		CTFPlayer* pOwner = dynamic_cast< CTFPlayer* >( GetOwnerPlayer() );
+
+		if (pOwner->m_Shared.IsUsingCustomColor())
+		{
+			if (m_iProjectileType == TF_PROJECTILE_BUILDING_REPAIR_BOLT)
+			{
+				return "effects/repair_claw_trail.vmt";
+			}
+			else if (m_iProjectileType == TF_PROJECTILE_HEALING_BOLT || m_iProjectileType == TF_PROJECTILE_FESTIVE_HEALING_BOLT)
+			{
+				return "effects/healingtrail.vmt";
+			}
+
+			return "effects/arrowtrail.vmt";
+		}
+	}
+
 	if ( m_iProjectileType == TF_PROJECTILE_BUILDING_REPAIR_BOLT )
 	{	
 		return ( GetTeamNumber() == TF_TEAM_RED ) ? CLAW_TRAIL_RED : CLAW_TRAIL_BLU;
@@ -1059,9 +1082,22 @@ void CTFProjectile_Arrow::CreateTrail( void )
 		const char *pTrailTeamName = GetTrailParticleName();
 		CSpriteTrail *pTempTrail = NULL;
 
+		Color color = COLOR_WHITE;
+
+		// Is player using a custom color?
+		if (GetOwnerPlayer())
+		{
+			CTFPlayer* pOwner = dynamic_cast<CTFPlayer*>(GetOwnerPlayer());
+
+			if (pOwner->m_Shared.IsUsingCustomColor())
+			{
+				color = pOwner->m_Shared.GetCustomColor();
+			}
+		}
+
 		pTempTrail = CSpriteTrail::SpriteTrailCreate( pTrailTeamName, GetAbsOrigin(), true );
 		pTempTrail->FollowEntity( this );
-		pTempTrail->SetTransparency( kRenderTransAlpha, 255, 255, 255, 255, kRenderFxNone );
+		pTempTrail->SetTransparency( kRenderTransAlpha, color.r(), color.g(), color.b(), 255, kRenderFxNone);
 		pTempTrail->SetStartWidth( width );
 		pTempTrail->SetTextureResolution( 1.0f / ( 96.0f * 1.0f ) );
 		pTempTrail->SetLifeTime( 0.3 );

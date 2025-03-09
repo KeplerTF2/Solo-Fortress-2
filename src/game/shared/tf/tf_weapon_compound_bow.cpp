@@ -54,7 +54,8 @@ BEGIN_DATADESC( CTFCompoundBow )
 END_DATADESC()
 #endif
 
-#define TF_ARROW_MAX_CHARGE_TIME 5.0f
+#define TF_ARROW_MAX_CHARGE_TIME 6.0f
+#define TF_ARROW_CHARGE_TIME 1.0f
 
 //=============================================================================
 //
@@ -209,11 +210,11 @@ void CTFCompoundBow::PrimaryAttack( void )
 
 		SendWeaponAnim( ACT_VM_PULLBACK );
 
-		float flRateMultiplyer = ApplyFireDelay( 1.0f );
+		float flRateMultiplyer = ApplyFireDelay( TF_ARROW_CHARGE_TIME );
 		ApplyRefireSpeedModifications( flRateMultiplyer );
 		if ( flRateMultiplyer > 0.0f )
 		{
-			flRateMultiplyer = 1.0f / flRateMultiplyer;
+			flRateMultiplyer = TF_ARROW_CHARGE_TIME / flRateMultiplyer;
 		}
 
 		// Speed up the reload animation built in to firing
@@ -269,7 +270,7 @@ void CTFCompoundBow::PrimaryAttack( void )
 float CTFCompoundBow::GetChargeMaxTime( void )
 {
 	// It takes less time to charge if the fire rate is higher
-	float flChargeMaxTime = ApplyFireDelay( 1.0f );
+	float flChargeMaxTime = ApplyFireDelay( TF_ARROW_CHARGE_TIME );
 	ApplyRefireSpeedModifications( flChargeMaxTime );
 
 	return flChargeMaxTime;
@@ -283,7 +284,9 @@ float CTFCompoundBow::GetCurrentCharge( void )
 	if ( GetInternalChargeBeginTime() == 0 )
 		return 0;
 	else
-		return MIN( gpGlobals->curtime - GetInternalChargeBeginTime(), 1.f );
+	{
+		return MIN(gpGlobals->curtime - GetInternalChargeBeginTime(), GetChargeMaxTime());
+	}
 }
 
 //-----------------------------------------------------------------------------
@@ -508,6 +511,12 @@ void CTFCompoundBow::GetProjectileFireSetup( CTFPlayer *pPlayer, Vector vecOffse
 void CTFCompoundBow::ApplyRefireSpeedModifications( float &flBaseRef )
 {
 	CALL_ATTRIB_HOOK_FLOAT( flBaseRef, fast_reload );
+
+	float flReloadTime = 1.f;
+	CALL_ATTRIB_HOOK_FLOAT( flReloadTime, mult_reload_time);
+	flReloadTime = 1.f / flReloadTime;
+
+	flBaseRef *= flReloadTime;
 
 	// Prototype hack
 	CTFPlayer *pPlayer = ToTFPlayer( GetOwner() );

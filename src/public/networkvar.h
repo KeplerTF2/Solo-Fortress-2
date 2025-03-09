@@ -711,7 +711,6 @@ private:
 	NETWORK_VAR_START( color32, name ) \
 	NETWORK_VAR_END( color32, name, CNetworkColor32Base, NetworkStateChanged )
 
-
 #define CNetworkString( name, length ) \
 	class NetworkVar_##name; \
 	friend class NetworkVar_##name; \

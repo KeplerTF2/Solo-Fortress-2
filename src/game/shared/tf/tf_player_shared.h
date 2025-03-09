@@ -625,6 +625,9 @@ public:
 	int	GetKillAssists( int iIndex ) const			{ return m_ScoreData.m_iKillAssists; }
 	int GetBonusPoints( int iIndex ) const			{ return m_ScoreData.m_iBonusPoints; }
 
+	Color GetCustomColor(void);
+	bool IsUsingCustomColor(void);
+
 	void ResetScores( void ) { m_ScoreData.Reset(); }
 	localplayerscoring_t *GetScoringData( void ) { return &m_ScoreData; }
 
@@ -754,6 +757,7 @@ private:
 	void OnAddBurning( void );
 	void OnAddDisguising( void );
 	void OnAddDisguised( void );
+	void OnAddDisguisedAsProp( void );
 	void OnAddDemoCharge( void );
 	void OnAddCritBoost( void );
 	void OnAddSodaPopperHype( void );
@@ -828,6 +832,7 @@ private:
 	void OnRemoveStealthed( void );
 	void OnRemoveDisguised( void );
 	void OnRemoveDisguising( void );
+	void OnRemoveDisguisedAsProp( void );
 	void OnRemoveInvulnerable( void );
 	void OnRemoveTeleported( void );
 	void OnRemoveDemoCharge( void );
@@ -912,6 +917,9 @@ private:
 
 	float GetCritMult( void );
 
+	const char* GetDisguisePropModel( void );
+	const char* GetDefaultDisguisePropModel( void );
+
 #ifdef GAME_DLL
 	void  UpdateCritMult( void );
 	void  RecordDamageEvent( const CTakeDamageInfo &info, bool bKill, int nVictimPrevHealth );
@@ -950,13 +958,15 @@ private:
 
 //TFTODO: What if the player we're disguised as leaves the server?
 //...maybe store the name instead of the index?
+	CNetworkVar( const char*, m_nDisguisePropModel );
+	CNetworkVar( bool, m_bDisguisePropIsSentry );
 	CNetworkVar( int, m_nDisguiseTeam );		// Team spy is disguised as.
 	CNetworkVar( int, m_nDisguiseClass );		// Class spy is disguised as.
 	CNetworkVar( int, m_nDisguiseSkinOverride ); // skin override value of the player spy disguised as.
 	CNetworkVar( int, m_nMaskClass );
 	CNetworkHandle( CTFPlayer, m_hDisguiseTarget ); // Player the spy is using for name disguise.
 	CNetworkVar( int, m_iDisguiseHealth );		// Health to show our enemies in player id
-	CNetworkVar( int, m_nDesiredDisguiseClass );
+	CNetworkVar( int, m_nDesiredDisguiseClass ) ;
 	CNetworkVar( int, m_nDesiredDisguiseTeam );
 	CNetworkHandle( CTFWeaponBase, m_hDisguiseWeapon );
 	CNetworkVar( int, m_nTeamTeleporterUsed ); // for disguised spies using enemy teleporters
@@ -980,7 +990,6 @@ private:
 
 	float m_fEnergyDrinkConsumeRate;
 	float m_fEnergyDrinkRegenRate;
-
 
 	EHANDLE m_pPhaseTrail[TF_SCOUT_NUMBEROFPHASEATTACHMENTS];
 	bool m_bPhaseFXOn;
@@ -1223,6 +1232,9 @@ public:
 	float	m_flStunMid;
 	TFStunAnimState_t	m_iStunAnimState;
 	int		m_iPhaseDamage;
+
+	Color m_cPlayerColor;
+	bool m_bUseCustomColor;
 	
 	// Movement stun state.
 	bool		m_bStunNeedsFadeOut;

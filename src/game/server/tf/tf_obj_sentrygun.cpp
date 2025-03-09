@@ -1092,11 +1092,18 @@ bool CObjectSentrygun::ValidTargetPlayer( CTFPlayer *pPlayer, const Vector &vecS
 		return false;
 
 	// Keep shooting at spies that disguise after we acquire them as at a target.
+	// TODO: Make it so being disguised as the engineer fools the sentry
+	/*
 	if ( pPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && pPlayer->m_Shared.GetDisguiseTeam() == GetTeamNumber() && pPlayer != m_hEnemy )
 		return false;
+	*/
 
 	// Don't shoot spys that are pretending to be a dispenser
 	if ( pPlayer->m_Shared.InCond( TF_COND_DISGUISED_AS_DISPENSER ) )
+		return false;
+
+	// Don't shoot spys that are pretending to be a prop
+	if ( pPlayer->m_Shared.InCond(TF_COND_DISGUISED_AS_PROP) )
 		return false;
 
 	// Don't target spies after they OnKill disguise with 'Your Eternal Reward'

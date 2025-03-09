@@ -397,6 +397,8 @@ BEGIN_RECV_TABLE_NOBASE( CTFPlayerShared, DT_TFPlayerShared )
 	RecvPropTime( RECVINFO( m_flInvisChangeCompleteTime ) ),
 	RecvPropInt( RECVINFO( m_nDisguiseTeam ) ),
 	RecvPropInt( RECVINFO( m_nDisguiseClass ) ),
+	RecvPropString( RECVINFO( m_nDisguisePropModel ) ),
+	RecvPropBool( RECVINFO( m_bDisguisePropIsSentry ) ),
 	RecvPropInt( RECVINFO( m_nDisguiseSkinOverride ) ),
 	RecvPropInt( RECVINFO( m_nMaskClass ) ),
 	RecvPropEHandle( RECVINFO ( m_hDisguiseTarget ) ),
@@ -455,7 +457,9 @@ BEGIN_PREDICTION_DATA_NO_BASE( CTFPlayerShared )
 	DEFINE_PRED_FIELD( m_flDuckTimer, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_flInvisChangeCompleteTime, FIELD_FLOAT, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nDisguiseTeam, FIELD_INTEGER, FTYPEDESC_INSENDTABLE  ),
-	DEFINE_PRED_FIELD( m_nDisguiseClass, FIELD_INTEGER, FTYPEDESC_INSENDTABLE  ),
+	DEFINE_PRED_FIELD( m_nDisguiseClass, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_nDisguisePropModel, FIELD_STRING, FTYPEDESC_INSENDTABLE ),
+	DEFINE_PRED_FIELD( m_bDisguisePropIsSentry, FIELD_BOOLEAN, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nDisguiseSkinOverride, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nMaskClass, FIELD_INTEGER, FTYPEDESC_INSENDTABLE ),
 	DEFINE_PRED_FIELD( m_nDesiredDisguiseTeam, FIELD_INTEGER, FTYPEDESC_INSENDTABLE  ),
@@ -571,6 +575,8 @@ BEGIN_SEND_TABLE_NOBASE( CTFPlayerShared, DT_TFPlayerShared )
 	SendPropInt( SENDINFO( m_nDisguiseClass ), 4, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nDisguiseSkinOverride ), 1, SPROP_UNSIGNED ),
 	SendPropInt( SENDINFO( m_nMaskClass ), 4, SPROP_UNSIGNED ),
+	SendPropBool( SENDINFO( m_bDisguisePropIsSentry ) ),
+	SendPropString( SENDINFO( m_nDisguisePropModel ) ),
 	SendPropEHandle( SENDINFO( m_hDisguiseTarget ) ),
 	SendPropInt( SENDINFO( m_iDisguiseHealth ), -1, SPROP_VARINT ),
 	SendPropBool( SENDINFO( m_bFeignDeathReady ) ),
@@ -801,6 +807,9 @@ CTFPlayerShared::CTFPlayerShared()
 
 	m_bLastDisguisedAsOwnTeam = false;
 
+	m_bDisguisePropIsSentry = false;
+	m_nDisguisePropModel = GetDefaultDisguisePropModel();
+
 	m_bRageDraining = false;
 	m_bInUpgradeZone = false;
 	m_bPhaseFXOn = false;
@@ -900,6 +909,9 @@ CTFPlayerShared::CTFPlayerShared()
 	m_hSwitchTo = NULL;
 
 	m_iCYOAPDAAnimState = CYOA_PDA_ANIM_NONE;
+
+	m_cPlayerColor = Color( 178, 97, 255 );
+	m_bUseCustomColor = true;
 
 	// make sure we have all conditions in the list
 	m_ConditionData.EnsureCount( TF_COND_LAST );
@@ -1075,6 +1087,16 @@ private:
 	tIntType *m_pnCondVar;
 	int m_nCondBit;
 };
+
+bool CTFPlayerShared::IsUsingCustomColor()
+{
+	return m_bUseCustomColor;
+}
+
+Color CTFPlayerShared::GetCustomColor()
+{
+	return m_cPlayerColor;
+}
 
 //-----------------------------------------------------------------------------
 // Purpose: Add a condition and duration
@@ -1615,6 +1637,10 @@ void CTFPlayerShared::OnConditionAdded( ETFCond eCond )
 		OnAddDisguised();
 		break;
 
+	case TF_COND_DISGUISED_AS_PROP:
+		OnAddDisguisedAsProp();
+		break;
+
 	case TF_COND_URINE:
 		OnAddUrine();
 		break;
@@ -1925,6 +1951,10 @@ void CTFPlayerShared::OnConditionRemoved( ETFCond eCond )
 		OnRemoveDisguised();
 		break;
 
+	case TF_COND_DISGUISED_AS_PROP:
+		OnRemoveDisguisedAsProp();
+		break;
+
 	case TF_COND_DISGUISING:
 		OnRemoveDisguising();
 		break;
@@ -2196,6 +2226,16 @@ void CTFPlayerShared::OnConditionRemoved( ETFCond eCond )
 	default:
 		break;
 	}
+}
+
+const char* CTFPlayerShared::GetDisguisePropModel()
+{
+	return m_nDisguisePropModel;
+}
+
+const char* CTFPlayerShared::GetDefaultDisguisePropModel()
+{
+	return "models/buildables/sentry3.mdl";
 }
 
 //-----------------------------------------------------------------------------
@@ -3306,10 +3346,10 @@ void CTFPlayerShared::OnAddDisguising( void )
 //-----------------------------------------------------------------------------
 // Purpose: set up effects for when player finished disguising
 //-----------------------------------------------------------------------------
-void CTFPlayerShared::OnAddDisguised( void )
+void CTFPlayerShared::OnAddDisguised(void)
 {
 #ifdef CLIENT_DLL
-	if ( m_pOuter->m_pDisguisingEffect )
+	if (m_pOuter->m_pDisguisingEffect)
 	{
 		// turn off disguising particles
 //		m_pOuter->ParticleProp()->StopEmission( m_pOuter->m_pDisguisingEffect );
@@ -3317,9 +3357,15 @@ void CTFPlayerShared::OnAddDisguised( void )
 	}
 	m_pOuter->m_flDisguiseEndEffectStartTime = gpGlobals->curtime;
 
-	UpdateCritBoostEffect( kCritBoost_ForceRefresh );
+	UpdateCritBoostEffect(kCritBoost_ForceRefresh);
 
 	m_pOuter->UpdateSpyStateChange();
+#endif
+}
+
+void CTFPlayerShared::OnAddDisguisedAsProp(void)
+{
+#ifdef CLIENT_DLL
 #endif
 }
 
@@ -7195,6 +7241,12 @@ void CTFPlayerShared::OnRemoveDisguised( void )
 #endif
 
 	m_pOuter->TeamFortress_SetSpeed();
+}
+
+void CTFPlayerShared::OnRemoveDisguisedAsProp(void)
+{
+	m_bDisguisePropIsSentry = false;
+	m_nDisguisePropModel = GetDefaultDisguisePropModel();
 }
 
 //-----------------------------------------------------------------------------
@@ -13746,7 +13798,7 @@ void CTFPlayerShared::PulseRageBuff( ERageBuffSlot eBuffSlot )
 		if ( !pTFPlayer || !pTFPlayer->IsAlive() )
 			continue;
 
-		if ( pTFPlayer->GetTeamNumber() != m_pOuter->GetTeamNumber() )
+		if ( pTFPlayer != m_pOuter )
 			continue;
 
 		if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && (pTFPlayer->m_Shared.GetDisguiseTeam() != m_pOuter->GetTeamNumber()) )
@@ -13787,6 +13839,7 @@ void CTFPlayerShared::PulseRageBuff( ERageBuffSlot eBuffSlot )
 			}
 		}
 #else
+		/*
 		if ( pTFPlayer != m_pOuter )
 		{
 			if ( eBuffCond == TF_COND_CRITBOOSTED_RAGE_BUFF || eBuffCond == TF_COND_SNIPERCHARGE_RAGE_BUFF )
@@ -13795,6 +13848,7 @@ void CTFPlayerShared::PulseRageBuff( ERageBuffSlot eBuffSlot )
 				continue;
 			}
 		}
+		*/
 
 		if ( eBuffCond != TF_COND_LAST )
 		{

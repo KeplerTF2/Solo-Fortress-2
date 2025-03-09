@@ -332,11 +332,18 @@ Color CHudChat::GetClientColor( int clientIndex )
 			}
 		}
 
-		switch ( iTeam )
+		if (pPlayer->m_Shared.IsUsingCustomColor())
 		{
-		case TF_TEAM_RED	: return pScheme->GetColor( "TFColors.ChatTextRed", g_ColorRed );
-		case TF_TEAM_BLUE	: return pScheme->GetColor( "TFColors.ChatTextBlue", g_ColorBlue );
-		default	: return g_ColorGrey;
+			return pPlayer->m_Shared.GetCustomColor();
+		}
+		else
+		{
+			switch (iTeam)
+			{
+				case TF_TEAM_RED: return pScheme->GetColor("TFColors.ChatTextRed", g_ColorRed);
+				case TF_TEAM_BLUE: return pScheme->GetColor("TFColors.ChatTextBlue", g_ColorBlue);
+				default: return g_ColorGrey;
+			}
 		}
 	}
 

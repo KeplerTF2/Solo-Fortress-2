@@ -46,6 +46,9 @@ public:
 	int GetNumRespecCredits( uint32 unIndex );
 	int GetNumBuybackCredits( uint32 unIndex );
 
+	bool    HasCustomColor(int iIndex);
+	Color   GetCustomColor(int iIndex);
+
 	void UpdatePlayerScoreStats( void );
 	void ResetPlayerScoreStats( int playerIndex = -1 );
 
@@ -87,6 +90,9 @@ protected:
 	// These variables are only networked in tournament mode
 	float	m_flNextRespawnTime[MAX_PLAYERS_ARRAY_SAFE];
 	int		m_iChargeLevel[MAX_PLAYERS_ARRAY_SAFE];
+
+	bool    m_bCustomColor[MAX_PLAYERS_ARRAY_SAFE];
+	int     m_iCustomColor[MAX_PLAYERS_ARRAY_SAFE];
 
 private:
 	int		m_iDamage[MAX_PLAYERS_ARRAY_SAFE];

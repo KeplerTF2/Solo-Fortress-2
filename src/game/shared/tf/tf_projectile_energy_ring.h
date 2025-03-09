@@ -43,6 +43,8 @@ public:
 #ifdef GAME_DLL
 	virtual void	ProjectileTouch( CBaseEntity *pOther ) OVERRIDE;
 	virtual void	ResolveFlyCollisionCustom( trace_t &trace, Vector &vecVelocity ) OVERRIDE;
+
+	CBaseEntity*     m_pLastTouchedEntity;
 #else
 	virtual void	OnDataChanged( DataUpdateType_t updateType ) OVERRIDE;
 #endif

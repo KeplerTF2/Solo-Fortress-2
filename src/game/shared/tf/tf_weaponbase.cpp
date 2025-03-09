@@ -6462,6 +6462,12 @@ Vector CTFWeaponBase::GetParticleColor( int iColor )
 	if ( !pItem->IsValid() )
 		return Vector(0,0,0);
 
+	if (pOwner->m_Shared.IsUsingCustomColor())
+	{
+		Color color = pOwner->m_Shared.GetCustomColor();
+		return Vector(color.r() / 255.f, color.g() / 255.f, color.b() / 255.f);
+	}
+
 	int iModifiedRGB = pItem->GetModifiedRGBValue( pOwner->GetTeamNumber() == TF_TEAM_BLUE );
 
 	if ( iModifiedRGB > 0 )

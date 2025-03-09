@@ -51,7 +51,7 @@ public : // IGameResources interface
 	virtual int		GetDeaths( int index );
 	virtual int		GetTeam( int index );
 	virtual int		GetFrags( int index );
-	virtual int		GetHealth( int index );
+	virtual int		GetHealth(int index);
 
 	virtual void ClientThink();
 	virtual	void	OnDataChanged(DataUpdateType_t updateType);

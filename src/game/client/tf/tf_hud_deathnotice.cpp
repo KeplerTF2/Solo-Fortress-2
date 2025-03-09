@@ -267,6 +267,7 @@ void CTFStreakNotice::StreakEnded( CTFPlayerShared::ETFStreak eStreakType, int i
 
 	// Get player Team for color
 	Color cKillerColor(235, 226, 202, 255);
+	
 	if ( g_PR->GetTeam( iKillerID ) == TF_TEAM_RED )
 	{
 		cKillerColor = COLOR_RED;

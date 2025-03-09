@@ -1593,16 +1593,36 @@ void C_TFRagdoll::DissolveEntity( CBaseEntity* pEnt )
 		pDissolve->m_nRenderFX = kRenderFxNone;
 		pDissolve->SetRenderColor( 255, 255, 255, 255 );
 
-		Vector vColor;
-		if ( m_iTeam == TF_TEAM_BLUE )
+		C_TFPlayer* pPlayer = NULL;
+
+		if (pEnt->IsPlayer())
 		{
-			vColor = TF_PARTICLE_WEAPON_RED_1 * 255;
-			pDissolve->SetEffectColor( vColor );
+			pPlayer = dynamic_cast<C_TFPlayer*>(pEnt);
 		}
-		else
+
+		Vector vColor;
+		bool UseCustomColor = false;
+		if (pPlayer)
 		{
-			vColor = TF_PARTICLE_WEAPON_BLUE_1 * 255;
-			pDissolve->SetEffectColor( vColor );
+			if (pPlayer->m_Shared.IsUsingCustomColor())
+			{
+				vColor = Vector(pPlayer->m_Shared.GetCustomColor().r(), pPlayer->m_Shared.GetCustomColor().g(), pPlayer->m_Shared.GetCustomColor().b());
+				pDissolve->SetEffectColor(vColor);
+				UseCustomColor = true;
+			}
+		}
+		if (!UseCustomColor)
+		{
+			if (m_iTeam == TF_TEAM_BLUE)
+			{
+				vColor = TF_PARTICLE_WEAPON_RED_1 * 255;
+				pDissolve->SetEffectColor(vColor);
+			}
+			else
+			{
+				vColor = TF_PARTICLE_WEAPON_BLUE_1 * 255;
+				pDissolve->SetEffectColor(vColor);
+			}
 		}
 
 		pDissolve->m_vDissolverOrigin = GetAbsOrigin();
@@ -7202,7 +7222,14 @@ void C_TFPlayer::GetTeamColor( Color &color )
 {
 	color[3] = 255;
 
-	if ( GetTeamNumber() == TF_TEAM_RED )
+	if (m_Shared.IsUsingCustomColor())
+	{
+		color[0] = m_Shared.GetCustomColor().r();
+		color[1] = m_Shared.GetCustomColor().g();
+		color[2] = m_Shared.GetCustomColor().b();
+	}
+
+	else if ( GetTeamNumber() == TF_TEAM_RED )
 	{
 		color[0] = 159;
 		color[1] = 55;
@@ -8902,6 +8929,16 @@ void C_TFPlayer::ValidateModelIndex( void )
 		if ( C_BasePlayer::GetLocalPlayer() != this )
 		{
 			SetAbsAngles( vec3_angle );
+		}
+	}
+	else if ( m_Shared.InCond(TF_COND_DISGUISED_AS_PROP) && IsEnemyPlayer() && m_Shared.GetDisguisePropModel() )
+	{
+		m_nModelIndex = modelinfo->GetModelIndex(m_Shared.GetDisguisePropModel());
+		//m_nModelIndex = modelinfo->GetModelIndex("models/buildables/dispenser_light.mdl");
+
+		if (C_BasePlayer::GetLocalPlayer() != this)
+		{
+			SetAbsAngles(vec3_angle);
 		}
 	}
 	else if ( m_Shared.InCond( TF_COND_DISGUISED ) && IsEnemyPlayer() )

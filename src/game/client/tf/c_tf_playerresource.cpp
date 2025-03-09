@@ -48,6 +48,8 @@ IMPLEMENT_CLIENTCLASS_DT( C_TF_PlayerResource, DT_TFPlayerResource, CTFPlayerRes
 	RecvPropArray3( RECVINFO_ARRAY( m_iPlayerClassWhenKilled ), RecvPropInt( RECVINFO( m_iPlayerClassWhenKilled[0] ) ) ),
 	RecvPropArray3( RECVINFO_ARRAY( m_iConnectionState ), RecvPropInt( RECVINFO( m_iConnectionState[0] ) ) ),
 	RecvPropArray3( RECVINFO_ARRAY( m_flConnectTime ), RecvPropTime( RECVINFO( m_flConnectTime[0] ) ) ),
+	RecvPropArray3( RECVINFO_ARRAY( m_bCustomColor ), RecvPropBool( RECVINFO( m_bCustomColor[0] ) ) ),
+	RecvPropArray3( RECVINFO_ARRAY( m_iCustomColor ), RecvPropInt( RECVINFO( m_iCustomColor[0] ) ) ),
 END_RECV_TABLE()
 
 
@@ -335,4 +337,30 @@ void C_TF_PlayerResource::ResetPlayerScoreStats( int playerIndex /*= -1*/ )
 		m_aPlayerScoreStats[playerIndex].m_iPrevCurrencyCollected = 0;
 		m_aPlayerScoreStats[playerIndex].m_iPrevBonusPoints = 0;
 	}
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool C_TF_PlayerResource::HasCustomColor(int iIndex)
+{
+	if (!IsConnected(iIndex) && !IsValid(iIndex))
+		return false;
+
+	return m_bCustomColor[iIndex];
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+Color C_TF_PlayerResource::GetCustomColor(int iIndex)
+{
+	if (!IsConnected(iIndex) && !IsValid(iIndex))
+		return COLOR_GREY;
+
+	Color color = COLOR_GREY;
+
+	color.SetRawColor( m_iCustomColor[iIndex] );
+
+	return color;
 }

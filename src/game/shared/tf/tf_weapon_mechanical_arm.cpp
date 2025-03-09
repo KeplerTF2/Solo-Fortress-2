@@ -22,6 +22,10 @@
 #include "c_tf_player.h"
 #endif
 
+#if GAME_DLL
+#include "tf_projectile_energy_ball.h"
+#endif
+
 
 
 //=============================================================================
@@ -41,11 +45,11 @@ LINK_ENTITY_TO_CLASS( tf_weapon_mechanical_arm, CTFMechanicalArm );
 PRECACHE_WEAPON_REGISTER( tf_weapon_mechanical_arm );
 
 
-#define		AMMO_PER_PROJECTILE_SHOCK		5
+#define		AMMO_PER_PROJECTILE_SHOCK		0
 
 const float tf_mecharm_orb_size = 100.f;
 const float tf_mecharm_orb_speed = 700.f;
-const int tf_mecharm_orb_cost = 65;
+const int tf_mecharm_orb_cost = 50;
 const int tf_mecharm_orb_zap_targets = 2;
 const int tf_mecharm_orb_zap_damage = 15;
 const float tf_mecharm_orb_lifetime = 1.2f;
@@ -145,9 +149,6 @@ bool CTFMechanicalArm::IsValidVictim( CTFPlayer *pOwner, CBaseEntity *pTarget )
 		return false;
 
 	if ( pTarget->IsPlayer() && pTarget->GetTeamNumber() == TEAM_SPECTATOR )
-		return false;
-
-	if ( pTarget->GetTeamNumber() == pOwner->GetTeamNumber() )
 		return false;
 
 	if ( pTarget->IsPlayer() && !pTarget->IsAlive() )
@@ -268,25 +269,12 @@ void CTFMechanicalArm::SecondaryAttack( void )
 		Vector vecEye = pOwner->EyePosition();
 		CTraceFilterSimple traceFilter( this, COLLISION_GROUP_PROJECTILE );
 		UTIL_TraceHull( vecEye, vecSrc, -Vector( 8.f, 8.f, 8.f ), Vector( 8.f, 8.f, 8.f ), MASK_SOLID_BRUSHONLY, &traceFilter, &trace );
+
 		if ( !trace.DidHit() )
 		{
-			CTFProjectile_MechanicalArmOrb *pOrb = static_cast< CTFProjectile_MechanicalArmOrb* >( CBaseEntity::CreateNoSpawn( "tf_projectile_mechanicalarmorb", vecSrc, angForward, pOwner ) );
-			if ( pOrb )
-			{
-				pOrb->SetOwnerEntity( pOwner );
-				pOrb->SetLauncher( this );
-
-				Vector vForward;
-				AngleVectors( angForward, &vForward, NULL, NULL );
-
-				pOrb->SetAbsVelocity( vForward * tf_mecharm_orb_speed );
-
-				pOrb->ChangeTeam( pOwner->GetTeamNumber() );
-				pOrb->SetCritical( false );
-
-				DispatchSpawn( pOrb );
-			}
+			DeflectProjectiles();
 		}
+
 #endif // GAME_DLL
 	}
 	else
@@ -308,6 +296,206 @@ void CTFMechanicalArm::SecondaryAttack( void )
 	m_flNextPrimaryAttack = gpGlobals->curtime + 0.67f;
 	m_flNextSecondaryAttack = gpGlobals->curtime + 0.67f;
 }
+
+#ifdef GAME_DLL
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFMechanicalArm::DeflectEntity(CBaseEntity* pTarget, CTFPlayer* pOwner, Vector& vecForward)
+{
+	Assert(pTarget);
+	Assert(pOwner);
+
+	Vector vecEye = pOwner->EyePosition();
+	Vector vecVel = pTarget->GetAbsVelocity();
+
+	// apply an impulse instead if this is a prop physics object
+	if (FClassnameIs(pTarget, "prop_physics"))
+	{
+		IPhysicsObject* pPhysicsObject = pTarget->VPhysicsGetObject();
+		if (pPhysicsObject && pTarget->CollisionProp())
+		{
+			Vector vecDir = pTarget->WorldSpaceCenter() - vecEye;
+			VectorNormalize(vecDir);
+			float flVel = 50.0f * CTFWeaponBase::DeflectionForce(pTarget->CollisionProp()->OBBSize(), 90, 12.0f);
+			pPhysicsObject->ApplyForceOffset(vecDir * flVel, vecEye);
+		}
+		return true;
+	}
+
+	int iAOEDeflection = 0;
+	CALL_ATTRIB_HOOK_INT(iAOEDeflection, aoe_deflection);
+	Vector vecDir;
+	if (iAOEDeflection)
+	{
+		vecDir = pTarget->WorldSpaceCenter() - pOwner->WorldSpaceCenter();
+	}
+	else
+	{
+		CTraceFilterSimple filter(pOwner, COLLISION_GROUP_NONE);
+		trace_t tr;
+		UTIL_TraceLine(vecEye, vecEye + vecForward * MAX_TRACE_LENGTH, MASK_SOLID, &filter, &tr);
+		vecDir = tr.endpos - pTarget->WorldSpaceCenter();
+	}
+
+	VectorNormalize(vecDir);
+
+	// Send the entity back where it came.
+	// If we want per-entity physical deflection behavior this could move into ::Deflected
+	IPhysicsObject* pPhysicsObject = pTarget->VPhysicsGetObject();
+	AngularImpulse angularimp;
+	if (pPhysicsObject)
+	{
+		pPhysicsObject->GetVelocity(&vecVel, &angularimp);
+	}
+	float flVel = vecVel.Length();
+	vecVel = flVel * vecDir;
+	if (pPhysicsObject)
+	{
+		if (pPhysicsObject->IsMotionEnabled() == false)
+		{
+			vecDir = pTarget->WorldSpaceCenter() - pOwner->WorldSpaceCenter();
+			VectorNormalize(vecDir);
+
+			vecVel = flVel * vecDir;
+		}
+
+		pPhysicsObject->EnableMotion(true);
+		pPhysicsObject->SetVelocity(&vecVel, &angularimp);
+	}
+	else
+	{
+		pTarget->SetAbsVelocity(vecVel);
+	}
+
+	// Perform entity specific deflection behavior like team changing.
+	pTarget->Deflected(pOwner, vecDir);
+
+	QAngle newAngles;
+	VectorAngles(vecDir, newAngles);
+	pTarget->SetAbsAngles(newAngles);
+
+	QAngle angForward = pOwner->EyeAngles();
+
+	// Convert projectile into a cow mangler beam
+	CTFProjectile_EnergyBall* pOrb = static_cast<CTFProjectile_EnergyBall*>(CBaseEntity::CreateNoSpawn("tf_projectile_energy_ball", vecDir, angForward, pOwner));
+	if (pOrb)
+	{
+		pOrb->SetOwnerEntity(pOwner);
+		pOrb->SetLauncher(this);
+		pOrb->SetAbsOrigin(pTarget->GetAbsOrigin());
+		pOrb->SetScorer(pOwner);
+
+		Vector vForward;
+		AngleVectors(angForward, &vForward, NULL, NULL);
+
+		pOrb->SetAbsVelocity(vForward * MAX(1100, pTarget->GetAbsVelocity().Length()));
+
+		float flDamage = pTarget->GetDamage();
+
+		if (flDamage == 0)
+			flDamage = 90;
+
+		pOrb->ChangeTeam(pOwner->GetTeamNumber());
+		pOrb->SetCritical(false);
+		pOrb->SetDamage(flDamage);
+
+		DispatchSpawn(pOrb);
+	}
+
+	// Shoot a beam at projectile
+	CPVSFilter filter(pTarget->WorldSpaceCenter());
+	Vector vStart = WorldSpaceCenter();
+	Vector vEnd = pTarget->EyePosition();
+	const char* pszHitEffect = (GetTeamNumber() == TF_TEAM_BLUE) ? "dxhr_lightningball_hit_blue" : "dxhr_lightningball_hit_red";
+	te_tf_particle_effects_control_point_t controlPoint = { PATTACH_ABSORIGIN, vEnd };
+	TE_TFParticleEffectComplex(filter, 0.0f, pszHitEffect, vStart, QAngle(0, 0, 0), NULL, &controlPoint, pTarget, PATTACH_CUSTOMORIGIN);
+
+	CDisablePredictionFiltering disabler;
+	DispatchParticleEffect("deflect_fx", PATTACH_ABSORIGIN_FOLLOW, pTarget);
+
+	UTIL_Remove(pTarget);
+
+	return true;
+}
+
+//-----------------------------------------------------------------------------
+// Purpose: 
+//-----------------------------------------------------------------------------
+bool CTFMechanicalArm::DeflectProjectiles()
+{
+	CTFPlayer* pOwner = ToTFPlayer(GetPlayerOwner());
+	if (!pOwner)
+		return false;
+
+	if (pOwner->GetWaterLevel() == WL_Eyes)
+		return false;
+
+	lagcompensation->StartLagCompensation(pOwner, pOwner->GetCurrentCommand());
+
+	Vector vecEye = pOwner->EyePosition();
+	Vector vecForward, vecRight, vecUp;
+	AngleVectors(pOwner->EyeAngles(), &vecForward, &vecRight, &vecUp);
+	Vector vecCenter = vecEye + vecForward * GetDeflectionRadius();
+
+	// Get a list of entities in the box defined by vecSize at VecCenter.
+	// We will then try to deflect everything in the box.
+	const int maxCollectedEntities = 64;
+	CBaseEntity* pObjects[maxCollectedEntities];
+	int count = UTIL_EntitiesInSphere(pObjects, maxCollectedEntities, vecCenter, GetDeflectionRadius(), FL_CLIENT | FL_GRENADE);
+
+	//NDebugOverlay::Sphere( vecCenter, GetDeflectionRadius(), 0, 255, 0, 40, 3 );
+
+	bool bDeflected = false;
+	bool bDeflectedPlayer = false;
+
+	bool bTruce = TFGameRules() && TFGameRules()->IsTruceActive() && pOwner->IsTruceValidForEnt();
+
+	for (int i = 0; i < count; i++)
+	{
+		if (pObjects[i] == pOwner)
+			continue;
+
+		if (pObjects[i]->IsPlayer() && pObjects[i]->GetTeamNumber() == TEAM_SPECTATOR)
+			continue;
+
+		if (pOwner->FVisible(pObjects[i], MASK_SOLID) == false)
+			continue;
+
+		if (bTruce)
+			continue;
+
+		if (!pObjects[i]->IsDeflectable() && !FClassnameIs(pObjects[i], "prop_physics"))
+			continue;
+
+		if (pObjects[i]->IsPlayer() == true)
+		{
+			CTFPlayer* pTarget = ToTFPlayer(pObjects[i]);
+			if (pTarget)
+			{
+				bool bRes = DeflectPlayer(pTarget, pOwner, vecForward);
+				bDeflectedPlayer |= bRes;
+				bDeflected |= bRes;
+			}
+		}
+		else
+		{
+			bDeflected |= DeflectEntity(pObjects[i], pOwner, vecForward);
+		}
+	}
+
+	if (bDeflected)
+	{
+		pOwner->SpeakConceptIfAllowed(MP_CONCEPT_DEFLECTED, "victim:0");
+		PlayDeflectionSound(bDeflectedPlayer);
+	}
+
+	lagcompensation->FinishLagCompensation(pOwner);
+
+	return true;
+}
+
+#endif
 
 #ifdef CLIENT_DLL
 void CTFMechanicalArm::OnDataChanged( DataUpdateType_t updateType )
@@ -831,9 +1019,6 @@ void CTFProjectile_MechanicalArmOrb::CheckForProjectiles( void )
 			continue;
 
 		if ( pObjects[i] == this )
-			continue;
-
-		if ( pObjects[i]->InSameTeam( this ) )
 			continue;
 
 		if ( pObjects[i]->GetAbsOrigin().DistToSqr( GetAbsOrigin() ) > Square( tf_mecharm_orb_size ) )

@@ -510,8 +510,7 @@ void CTFRobotArm::Smack( void )
 
 	trace_t trace;
 	bool btrace = DoSwingTrace( trace );
-	if ( btrace && trace.DidHitNonWorldEntity() && trace.m_pEnt && trace.m_pEnt->IsPlayer() &&
-		 trace.m_pEnt->GetTeamNumber() != pPlayer->GetTeamNumber() )
+	if ( btrace && trace.DidHitNonWorldEntity() && trace.m_pEnt && trace.m_pEnt->IsPlayer() )
 	{
 		m_iComboCount++;
 		m_flLastComboHit = gpGlobals->curtime;

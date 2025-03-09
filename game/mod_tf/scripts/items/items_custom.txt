@@ -2,6 +2,49 @@
 
 "items_game"
 {
+	"attributes"
+	{
+		"3019"
+		{
+			"name"	"rocket jump damage increase HIDDEN"
+			"attribute_class"	"rocket_jump_dmg_reduction"
+			"description_string"	"#Attrib_RocketJumpDmgReduction"
+			"description_format"	"value_is_percentage"
+			"hidden"	"1"
+			"effect_type"	"negative"
+		}
+		"3020"
+		{
+			"name"	"self dmg push force increased HIDDEN"
+			"attribute_class"	"mult_dmgself_push_force"
+			"description_string"	"#Attrib_SelfDmgPush_Increased"
+			"description_format"	"value_is_percentage"
+			"hidden"	"1"
+			"effect_type"	"positive"
+			"armory_desc"	"on_wearer"
+			"stored_as_integer"	"0"
+		}
+		"3021"
+		{
+			"name"	"alt electrical airblast DISPLAY ONLY"
+			"attribute_class"	"electrical_airblast_DISPLAY_ONLY"
+			"description_string"	"#Attrib_AltElectricalAirblast"
+			"description_format"	"value_is_additive_percentage"
+			"hidden"	"0"
+			"effect_type"	"positive"
+			"stored_as_integer"	"0"
+		}
+		"3022"
+		{
+			"name"	"bow reload time increased"
+			"attribute_class"	"mult_reload_time"
+			"description_string"	"#Attrib_BowReloadTime_Increased"
+			"description_format"	"value_is_percentage"
+			"hidden"	"0"
+			"effect_type"	"negative"
+			"stored_as_integer"	"0"
+		}
+	}
 	"prefabs"
 	{
 		"weapon_shortstop"
@@ -73,6 +116,17 @@
 				"pyro" "secondary"
 				"heavy" "secondary"
 				"engineer" "primary"
+			}
+		}
+		"weapon_ubersaw"
+		{
+			"attributes"
+			{
+				"add uber charge on hit"
+				{
+					"attribute_class"	"add_onhit_ubercharge"
+					"value"	"0.15"
+				}
 			}
 		}
 	}
@@ -172,6 +226,38 @@
 				{
 					"attribute_class"	"mult_switch_from_wep_deploy_time"
 					"value"	"0.8"
+				}
+			}
+		}
+		// The Candy Cane
+		"317"
+		{
+			"attributes"
+			{
+				"dmg taken increased"
+				{
+					"attribute_class"	"mult_dmgtaken"
+					"value" "1.1"
+				}
+				"dmg taken from blast increased"
+				{
+					"value"	"delete"
+				}
+			}
+		}
+		// The Liberty Launcher
+		"414"
+		{
+			"static_attrs"
+			{
+				"single wep deploy time decreased"		"0.7"
+				"switch from wep deploy time decreased"	"0.7"
+			}
+			"attributes"
+			{
+				"Projectile speed increased"
+				{
+					"value"	"delete"
 				}
 			}
 		}
@@ -280,6 +366,115 @@
 					"value"	"delete"
 				}
 				"spunup_damage_resistance"
+				{
+					"value"	"delete"
+				}
+			}
+		}
+		// The Pomson 6000
+		"588"
+		{
+			"attributes"
+			{
+				"subtract victim medigun charge on hit"
+				{
+					"value"	"delete"
+				}
+				"subtract victim cloak on hit"
+				{
+					"value"	"delete"
+				}
+			}
+		}
+		// The Short Circuit
+		"528"
+		{
+			"attributes"
+			{
+				"alt electrical airblast DISPLAY ONLY"
+				{
+					"attribute_class"	"electrical_airblast_DISPLAY_ONLY"
+					"value"	"1"
+				}
+				"rocket jump damage increase HIDDEN"
+				{
+					"attribute_class"	"rocket_jump_dmg_reduction"
+					"value"	"10"
+				}
+				"self dmg push force increased HIDDEN"
+				{
+					"attribute_class"	"mult_dmgself_push_force"
+					"value"		"10"
+				}
+				"mod ammo per shot"
+				{
+					"value"	"delete"
+				}
+				"electrical airblast DISPLAY ONLY"
+				{
+					"value"	"delete"
+				}
+			}
+		}
+		// The Fortified Compound
+		"1092"
+		{
+			"attributes"
+			{
+				"projectile penetration"
+				{
+					"attribute_class"	"projectile_penetration"
+					"value"	"1"
+				}
+				"damage bonus"
+				{
+					"attribute_class"	"mult_dmg"
+					"value"	"1.2"
+				}
+				"bow reload time increased"
+				{
+					"attribute_class"	"mult_reload_time"
+					"value"	"0.8"
+				}
+				"aiming movespeed decreased"
+				{
+					"attribute_class"	"mult_player_aiming_movespeed"
+					"value"	"0.8"
+				}
+			}
+		}
+		// The Classic
+		"1098"
+		{
+			"attributes"
+			{
+				"aiming movespeed increased"
+				{
+					"attribute_class"	"mult_player_aiming_movespeed"
+					"value"	"2.5"
+				}
+			}
+		}
+		// Darwin's Danger Sheild
+		"231"
+		{
+			"attributes"
+			{
+				"move speed bonus"
+				{
+					"attribute_class"	"mult_player_movespeed"
+					"value"	"1.1"
+				}
+				"increased jump height"
+				{
+					"attribute_class"	"mod_jump_height"
+					"value"	"1.25"
+				}
+				"afterburn immunity"
+				{
+					"value"	"delete"
+				}
+				"dmg taken from fire reduced"
 				{
 					"value"	"delete"
 				}

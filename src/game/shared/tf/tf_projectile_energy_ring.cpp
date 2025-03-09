@@ -258,6 +258,11 @@ void CTFProjectile_EnergyRing::ProjectileTouch( CBaseEntity *pOther )
 	{
 		m_flLastHitTime = gpGlobals->curtime;
 
+		if (m_pLastTouchedEntity == pOther)
+			return;
+
+		m_pLastTouchedEntity = pOther;
+
 		const int nDamage = GetDamage();
 
 		CTakeDamageInfo info( this, pOwner, GetLauncher(), nDamage, GetDamageType(), TF_DMG_CUSTOM_PLASMA );
@@ -354,7 +359,7 @@ void CTFProjectile_EnergyRing::OnDataChanged( DataUpdateType_t updateType )
 //-----------------------------------------------------------------------------
 float CTFProjectile_EnergyRing::GetDamage()
 {
-	return ShouldPenetrate() ? 20.f : 60.f;
+	return 60.f; // ShouldPenetrate() ? 20.f : 60.f;
 }
 
 bool CTFProjectile_EnergyRing::ShouldPenetrate() const

@@ -47,6 +47,8 @@ IMPLEMENT_SERVERCLASS_ST( CTFPlayerResource, DT_TFPlayerResource )
 	SendPropArray3( SENDINFO_ARRAY3( m_iPlayerClassWhenKilled ), SendPropInt( SENDINFO_ARRAY( m_iPlayerClassWhenKilled ), 5, SPROP_UNSIGNED ) ),
 	SendPropArray3( SENDINFO_ARRAY3( m_iConnectionState ), SendPropInt( SENDINFO_ARRAY( m_iConnectionState ), 3, SPROP_UNSIGNED ) ),
 	SendPropArray3( SENDINFO_ARRAY3( m_flConnectTime ), SendPropTime( SENDINFO_ARRAY( m_flConnectTime ) ) ),
+	SendPropArray3( SENDINFO_ARRAY3( m_bCustomColor ), SendPropBool( SENDINFO_ARRAY( m_bCustomColor ) ) ),
+	SendPropArray3( SENDINFO_ARRAY3( m_iCustomColor ), SendPropInt( SENDINFO_ARRAY( m_iCustomColor ), 32, SPROP_UNSIGNED) ),
 END_SEND_TABLE()
 
 LINK_ENTITY_TO_CLASS( tf_player_manager, CTFPlayerResource );
@@ -199,42 +201,50 @@ void CTFPlayerResource::UpdatePlayerData( void )
 //-----------------------------------------------------------------------------
 // Purpose: 
 //-----------------------------------------------------------------------------
-void CTFPlayerResource::UpdateConnectedPlayer( int iIndex, CBasePlayer *pPlayer )
+void CTFPlayerResource::UpdateConnectedPlayer(int iIndex, CBasePlayer* pPlayer)
 {
-	BaseClass::UpdateConnectedPlayer( iIndex, pPlayer );
+	BaseClass::UpdateConnectedPlayer(iIndex, pPlayer);
 
-	CTFPlayer *pTFPlayer = ToTFPlayer( pPlayer );
+	CTFPlayer* pTFPlayer = ToTFPlayer(pPlayer);
 
-	PlayerStats_t *pTFPlayerStats = CTF_GameStats.FindPlayerStats( pTFPlayer );
-	if ( pTFPlayerStats ) 
+	PlayerStats_t* pTFPlayerStats = CTF_GameStats.FindPlayerStats(pTFPlayer);
+	if (pTFPlayerStats)
 	{
 		// Update accumulated and per-round stats
-		localplayerscoring_t *pData = pTFPlayer->m_Shared.GetScoringData();
-		pData->UpdateStats( pTFPlayerStats->statsAccumulated, pTFPlayer, false );
+		localplayerscoring_t* pData = pTFPlayer->m_Shared.GetScoringData();
+		pData->UpdateStats(pTFPlayerStats->statsAccumulated, pTFPlayer, false);
 
 		pData = pTFPlayer->m_Shared.GetRoundScoringData();
-		pData->UpdateStats( pTFPlayerStats->statsCurrentRound, pTFPlayer, true );
+		pData->UpdateStats(pTFPlayerStats->statsCurrentRound, pTFPlayer, true);
 
 		// Send every STATS_SEND_FREQUENCY (1.f)
-		if ( gpGlobals->curtime > m_flNextDamageAndHealingSend )
+		if (gpGlobals->curtime > m_flNextDamageAndHealingSend)
 		{
-			m_iDamage.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE] );
-			m_iDamageAssist.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE_ASSIST] );
-			m_iDamageBoss.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE_BOSS] );
-			m_iHealing.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_HEALING] );
-			m_iHealingAssist.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_HEALING_ASSIST] );
-			m_iDamageBlocked.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE_BLOCKED] );
-			m_iCurrencyCollected.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_CURRENCY_COLLECTED] );
-			m_iBonusPoints.Set( iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_BONUS_POINTS] );
-			m_iPlayerLevel.Set( iIndex, pTFPlayer->GetExperienceLevel() );
+			m_iDamage.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE]);
+			m_iDamageAssist.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE_ASSIST]);
+			m_iDamageBoss.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE_BOSS]);
+			m_iHealing.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_HEALING]);
+			m_iHealingAssist.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_HEALING_ASSIST]);
+			m_iDamageBlocked.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_DAMAGE_BLOCKED]);
+			m_iCurrencyCollected.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_CURRENCY_COLLECTED]);
+			m_iBonusPoints.Set(iIndex, pTFPlayerStats->statsCurrentRound.m_iStat[TFSTAT_BONUS_POINTS]);
+			m_iPlayerLevel.Set(iIndex, pTFPlayer->GetExperienceLevel());
 		}
 	}
 
-	m_iMaxHealth.Set( iIndex, pTFPlayer->GetMaxHealth() );
+	m_iMaxHealth.Set(iIndex, pTFPlayer->GetMaxHealth());
 
 	// m_iMaxBuffedHealth is misnamed -- it should be m_iMaxHealthForBuffing, but we don't want to change it now due to demos.
-	m_iMaxBuffedHealth.Set( iIndex, pTFPlayer->GetMaxHealthForBuffing() );
-	m_iPlayerClass.Set( iIndex, pTFPlayer->GetPlayerClass()->GetClassIndex() );
+	m_iMaxBuffedHealth.Set(iIndex, pTFPlayer->GetMaxHealthForBuffing());
+	m_iPlayerClass.Set(iIndex, pTFPlayer->GetPlayerClass()->GetClassIndex());
+
+	m_bCustomColor.Set(iIndex, pTFPlayer->m_Shared.IsUsingCustomColor());
+	if (pTFPlayer->m_Shared.IsUsingCustomColor())
+	{
+		Color color = pTFPlayer->m_Shared.GetCustomColor();
+		color.SetColor(color.r(), color.g(), color.b(), 255);
+		m_iCustomColor.Set(iIndex, color.GetRawColor());
+	}
 
 	m_iActiveDominations.Set( iIndex, pTFPlayer->GetNumberofDominations() );
 

@@ -22,6 +22,7 @@
 #include "tf_shareddefs.h"
 #include "tf_gamerules.h"
 #include "tf_logic_player_destruction.h"
+#include "c_tf_playerresource.h"
 
 #include "hud_basedeathnotice.h"
 
@@ -266,8 +267,15 @@ void CHudBaseDeathNotice::Paint()
 
 		if ( killer[0] )
 		{
+			Color color = GetTeamColor( msg.Killer.iTeam, msg.bLocalPlayerInvolved );
+
+			if ( g_TF_PR->HasCustomColor( msg.iKillerID - 1 ) )
+			{
+				color = g_TF_PR->GetCustomColor( msg.iKillerID - 1 );
+			}
+
 			// Draw killer's name
-			DrawText( x, yText, m_hTextFont, GetTeamColor( msg.Killer.iTeam, msg.bLocalPlayerInvolved ), killer );
+			DrawText( x, yText, m_hTextFont, color, killer );
 			x += iKillerTextWide;
 		}
 
@@ -314,7 +322,14 @@ void CHudBaseDeathNotice::Paint()
 		}
 
 		// Draw victims name
-		DrawText( x + iVictimTextOffset, yText, m_hTextFont, GetTeamColor( msg.Victim.iTeam, msg.bLocalPlayerInvolved ), victim );
+		Color color = GetTeamColor( msg.Victim.iTeam, msg.bLocalPlayerInvolved );
+
+		if (g_TF_PR->HasCustomColor( msg.iVictimID - 1 ) )
+		{
+			color = g_TF_PR->GetCustomColor( msg.iVictimID - 1 );
+		}
+
+		DrawText( x + iVictimTextOffset, yText, m_hTextFont, color, victim );
 		x += iVictimTextWide;
 
 		// postkiller icon

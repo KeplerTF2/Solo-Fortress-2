@@ -503,25 +503,6 @@ void CTFProjectile_Jar::PipebombTouch( CBaseEntity *pOther )
 	if ( !pOther->IsWorld() && !pOther->IsPlayer() )
 		return;
 
-	// Don't collide with non players if we're still in the grace period.
-	if ( pOther->IsPlayer() )
-	{
-		// Exception to this rule - if we're a jar or milk, and our potential victim is on fire, then allow collision after all.
-		// If we're a jar or milk, then still allow collision if our potential victim is on fire.
-		if (m_iProjectileType == TF_PROJECTILE_JAR || m_iProjectileType == TF_PROJECTILE_JAR_MILK)
-		{
-			auto victim = ToTFPlayer(pOther);
-			if (!victim->m_Shared.InCond(TF_COND_BURNING))
-			{
-				return;
-			}
-		}
-		else
-		{
-			return;
-		}
-	}
-
 	// Handle hitting skybox (disappear).
 	trace_t pTrace;
 	Vector velDir = GetAbsVelocity();

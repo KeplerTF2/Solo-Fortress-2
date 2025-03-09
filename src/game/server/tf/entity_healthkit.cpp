@@ -77,6 +77,7 @@ bool CHealthKit::MyTouch( CBasePlayer *pPlayer )
 		bool bPerformPickup = false;
 
 		// In the case of sandvich's owner, only restore ammo
+		/*
 		if ( GetOwnerEntity() == pPlayer && bIsAnyHeavyWithSandvichEquippedPickingUp )
 		{
 			if ( pPlayer->GiveAmmo( 1, TF_AMMO_GRENADES1, false ) )
@@ -88,110 +89,110 @@ bool CHealthKit::MyTouch( CBasePlayer *pPlayer )
 		}
 		else
 		{
-			float flRuneHealthBonus = ( pTFPlayer->m_Shared.GetCarryingRuneType() != RUNE_KNOCKOUT ) ? pTFPlayer->GetRuneHealthBonus() : 0;
+		*/
+		float flRuneHealthBonus = ( pTFPlayer->m_Shared.GetCarryingRuneType() != RUNE_KNOCKOUT ) ? pTFPlayer->GetRuneHealthBonus() : 0;
 			
-			float flHealth = ceil( ( pPlayer->GetMaxHealth() - flRuneHealthBonus ) * PackRatios[GetPowerupSize()] );
+		float flHealth = ceil( ( pPlayer->GetMaxHealth() - flRuneHealthBonus ) * PackRatios[GetPowerupSize()] );
 
-			CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer, flHealth, mult_health_frompacks );
+		CALL_ATTRIB_HOOK_FLOAT_ON_OTHER( pPlayer, flHealth, mult_health_frompacks );
 
-			int nHealthGiven = pPlayer->TakeHealth( flHealth, DMG_GENERIC );
+		int nHealthGiven = pPlayer->TakeHealth( flHealth, DMG_GENERIC );
 
-			if ( nHealthGiven > 0 )
+		if ( nHealthGiven > 0 )
+		{
+			IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
+			if ( event )
 			{
-				IGameEvent *event = gameeventmanager->CreateEvent( "player_healed" );
-				if ( event )
-				{
-					CTFPlayer *pOwner = ToTFPlayer( GetOwnerEntity() );
-					int nHealerID = pOwner ? pOwner->GetUserID() : 0;
-
-					event->SetInt( "priority", 1 );	// HLTV event priority
-					event->SetInt( "patient", pPlayer->GetUserID() );
-					event->SetInt( "healer", nHealerID );
-					event->SetInt( "amount", nHealthGiven );
-					gameeventmanager->FireEvent( event );
-				}
-			}
-
-			if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && pTFPlayer->m_Shared.GetCarryingRuneType() != RUNE_PLAGUE )
-			{
-				float flDisguiseHealth = pTFPlayer->m_Shared.GetDisguiseHealth();
-				float flDisguiseMaxHealth = pTFPlayer->m_Shared.GetDisguiseMaxHealth();
-				float flHealthToAdd = ceil(flDisguiseMaxHealth * PackRatios[GetPowerupSize()]);
-
-				// don't want to add more than we're allowed to have
-				if ( flHealthToAdd > flDisguiseMaxHealth - flDisguiseHealth )
-				{
-					flHealthToAdd = flDisguiseMaxHealth - flDisguiseHealth;
-				}
-
-				pTFPlayer->m_Shared.SetDisguiseHealth( flDisguiseHealth + flHealthToAdd );
-
-				bSuccess = true;
-			}
-
-			if ( nHealthGiven > 0 || pTFPlayer->m_Shared.InCond( TF_COND_BLEEDING ) || pTFPlayer->m_Shared.InCond( TF_COND_BURNING ) || pTFPlayer->m_Shared.InCond( TF_COND_PLAGUE ) )
-			{
-				bPerformPickup = true;
-				bSuccess = true;
-
-				// subtract this from the drowndmg in case they're drowning and being healed at the same time
-				pPlayer->AdjustDrownDmg( -1.0 * flHealth );
-
-				CSingleUserRecipientFilter user( pPlayer );
-				EmitSound( user, entindex(), TF_HEALTHKIT_PICKUP_SOUND );
-
 				CTFPlayer *pOwner = ToTFPlayer( GetOwnerEntity() );
-				if ( pOwner && ( pOwner != pTFPlayer ) )
+				int nHealerID = pOwner ? pOwner->GetUserID() : 0;
+
+				event->SetInt( "priority", 1 );	// HLTV event priority
+				event->SetInt( "patient", pPlayer->GetUserID() );
+				event->SetInt( "healer", nHealerID );
+				event->SetInt( "amount", nHealthGiven );
+				gameeventmanager->FireEvent( event );
+			}
+		}
+
+		if ( pTFPlayer->m_Shared.InCond( TF_COND_DISGUISED ) && pTFPlayer->m_Shared.GetCarryingRuneType() != RUNE_PLAGUE )
+		{
+			float flDisguiseHealth = pTFPlayer->m_Shared.GetDisguiseHealth();
+			float flDisguiseMaxHealth = pTFPlayer->m_Shared.GetDisguiseMaxHealth();
+			float flHealthToAdd = ceil(flDisguiseMaxHealth * PackRatios[GetPowerupSize()]);
+
+			// don't want to add more than we're allowed to have
+			if ( flHealthToAdd > flDisguiseMaxHealth - flDisguiseHealth )
+			{
+				flHealthToAdd = flDisguiseMaxHealth - flDisguiseHealth;
+			}
+
+			pTFPlayer->m_Shared.SetDisguiseHealth( flDisguiseHealth + flHealthToAdd );
+
+			bSuccess = true;
+		}
+
+		if ( nHealthGiven > 0 || pTFPlayer->m_Shared.InCond( TF_COND_BLEEDING ) || pTFPlayer->m_Shared.InCond( TF_COND_BURNING ) || pTFPlayer->m_Shared.InCond( TF_COND_PLAGUE ) )
+		{
+			bPerformPickup = true;
+			bSuccess = true;
+
+			// subtract this from the drowndmg in case they're drowning and being healed at the same time
+			pPlayer->AdjustDrownDmg( -1.0 * flHealth );
+
+			CSingleUserRecipientFilter user( pPlayer );
+			EmitSound( user, entindex(), TF_HEALTHKIT_PICKUP_SOUND );
+
+			CTFPlayer *pOwner = ToTFPlayer( GetOwnerEntity() );
+			if ( pOwner && ( pOwner != pTFPlayer ) )
+			{
+				if ( pOwner->GetTeamNumber() == pTFPlayer->GetTeamNumber() )
 				{
-					if ( pOwner->GetTeamNumber() == pTFPlayer->GetTeamNumber() )
+					if ( pTFPlayer->GetLastEntityDamaged() != pTFPlayer )
 					{
-						if ( pTFPlayer->GetLastEntityDamaged() != pTFPlayer )
-						{
-							CTF_GameStats.Event_PlayerAwardBonusPoints( pOwner, pTFPlayer, 10 );
-							CTF_GameStats.Event_PlayerHealedOtherAssist( pOwner, nHealthGiven );
-						}
+						CTF_GameStats.Event_PlayerAwardBonusPoints( pOwner, pTFPlayer, 10 );
+						CTF_GameStats.Event_PlayerHealedOtherAssist( pOwner, nHealthGiven );
+					}
 
-						if ( pOwner->Weapon_OwnsThisID( TF_WEAPON_LUNCHBOX ) && pOwner->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) )
+					if ( pOwner->Weapon_OwnsThisID( TF_WEAPON_LUNCHBOX ) && pOwner->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) )
+					{
+						CEconEntity *pEconItem = dynamic_cast<CEconEntity *>( pOwner->GetEntityForLoadoutSlot( LOADOUT_POSITION_SECONDARY ) );
+						if ( pEconItem )
 						{
-							CEconEntity *pEconItem = dynamic_cast<CEconEntity *>( pOwner->GetEntityForLoadoutSlot( LOADOUT_POSITION_SECONDARY ) );
-							if ( pEconItem )
+							EconEntity_OnOwnerKillEaterEvent( pEconItem, pOwner, pTFPlayer, kKillEaterEvent_AllyHealingDone, nHealthGiven );
+
+							if ( pTFPlayer->m_Shared.InCond( TF_COND_BURNING ) )
 							{
-								EconEntity_OnOwnerKillEaterEvent( pEconItem, pOwner, pTFPlayer, kKillEaterEvent_AllyHealingDone, nHealthGiven );
-
-								if ( pTFPlayer->m_Shared.InCond( TF_COND_BURNING ) )
-								{
-									EconEntity_OnOwnerKillEaterEvent( pEconItem, pOwner, pTFPlayer, kKillEaterEvent_BurningAllyExtinguished );
-								}
+								EconEntity_OnOwnerKillEaterEvent( pEconItem, pOwner, pTFPlayer, kKillEaterEvent_BurningAllyExtinguished );
 							}
 						}
 					}
 				}
-
-				if ( pTFPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) )
-				{
-					UserMessageBegin( user, "UpdateAchievement" );
-					WRITE_SHORT( ACHIEVEMENT_TF_HEAVY_HEAL_MEDIKITS );
-					WRITE_SHORT( nHealthGiven );
-					MessageEnd();
-				}
-
-				pTFPlayer->m_Shared.HealthKitPickupEffects( nHealthGiven );
-
-				CTF_GameStats.Event_PlayerHealthkitPickup( pTFPlayer );
 			}
-			else if ( !m_bThrownSingleInstance )
+
+			if ( pTFPlayer->IsPlayerClass( TF_CLASS_HEAVYWEAPONS ) )
 			{
-				if ( bIsAnyHeavyWithSandvichEquippedPickingUp )
+				UserMessageBegin( user, "UpdateAchievement" );
+				WRITE_SHORT( ACHIEVEMENT_TF_HEAVY_HEAL_MEDIKITS );
+				WRITE_SHORT( nHealthGiven );
+				MessageEnd();
+			}
+
+			pTFPlayer->m_Shared.HealthKitPickupEffects( nHealthGiven );
+
+			CTF_GameStats.Event_PlayerHealthkitPickup( pTFPlayer );
+		}
+		else if ( !m_bThrownSingleInstance )
+		{
+			if ( bIsAnyHeavyWithSandvichEquippedPickingUp )
+			{
+				if ( pPlayer->GiveAmmo( 1, TF_AMMO_GRENADES1, false ) )
 				{
-					if ( pPlayer->GiveAmmo( 1, TF_AMMO_GRENADES1, false ) )
+					if ( pTFPlayer )
 					{
-						if ( pTFPlayer )
-						{
-							pTFPlayer->m_Shared.SetItemChargeMeter( LOADOUT_POSITION_SECONDARY, 100.f );
-						}
-						bPerformPickup = true;
-						bSuccess = true;
+						pTFPlayer->m_Shared.SetItemChargeMeter( LOADOUT_POSITION_SECONDARY, 100.f );
 					}
+					bPerformPickup = true;
+					bSuccess = true;
 				}
 			}
 		}

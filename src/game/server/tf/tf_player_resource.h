@@ -65,6 +65,8 @@ protected:
 	CNetworkArray( int, m_iStreaks, ( ( MAX_PLAYERS_ARRAY_SAFE ) * CTFPlayerShared::kTFStreak_COUNT ) );
 	CNetworkArray( int, m_iUpgradeRefundCredits, MAX_PLAYERS_ARRAY_SAFE );
 	CNetworkArray( int, m_iBuybackCredits, MAX_PLAYERS_ARRAY_SAFE );
+	CNetworkArray( bool, m_bCustomColor, MAX_PLAYERS_ARRAY_SAFE );
+	CNetworkArray( int, m_iCustomColor, MAX_PLAYERS_ARRAY_SAFE );
 
 	CNetworkVar( int, m_iPartyLeaderRedTeamIndex );
 	CNetworkVar( int, m_iPartyLeaderBlueTeamIndex );

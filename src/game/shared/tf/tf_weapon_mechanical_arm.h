@@ -60,9 +60,13 @@ private:
 #ifdef GAME_DLL
 	bool IsValidVictim( CTFPlayer *pOwner, CBaseEntity *pTarget );
 	void ShockVictim( CTFPlayer *pOwner, CBaseEntity *pTarget );
+
+	bool	DeflectEntity(CBaseEntity* pTarget, CTFPlayer* pOwner, Vector& vecForward);
+	bool	DeflectProjectiles();
 #else
 	void StopParticleBeam( void );
 	void UpdateParticleBeam( void );
+
 	HPARTICLEFFECT m_pParticleBeamEffect;
 	HPARTICLEFFECT m_pParticleBeamSpark;
 	C_BaseEntity  *m_pEffectOwner;

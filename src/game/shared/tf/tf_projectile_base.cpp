@@ -173,7 +173,7 @@ CTFBaseProjectile *CTFBaseProjectile::Create( const char *pszClassname, const Ve
 	pProjectile->AddEffects( EF_NODRAW );
 #endif 
 
-	if ( pszDispatchEffect )
+	if (pszDispatchEffect)
 	{
 		// we'd like to just send this projectile to a person in the shooter's PAS. However 
 		// the projectile won't be sent to a player outside of water if shot from inside water
@@ -181,20 +181,20 @@ CTFBaseProjectile *CTFBaseProjectile::Create( const char *pszClassname, const Ve
 		// if it crosses contents, we'll just broadcast the projectile. Otherwise, just send to PVS
 		// of the trace's endpoint. 
 		trace_t tr;
-		CTraceFilterSimple traceFilter( pOwner, COLLISION_GROUP_NONE );
-		ITraceFilter *pFilterChain = NULL;
+		CTraceFilterSimple traceFilter(pOwner, COLLISION_GROUP_NONE);
+		ITraceFilter* pFilterChain = NULL;
 
-		CTraceFilterChain traceFilterChain( &traceFilter, pFilterChain );
-		UTIL_TraceLine( vecOrigin, vecOrigin + vecForward * MAX_COORD_RANGE, (CONTENTS_SOLID|CONTENTS_MOVEABLE|CONTENTS_WINDOW|CONTENTS_GRATE), &traceFilterChain, &tr );
+		CTraceFilterChain traceFilterChain(&traceFilter, pFilterChain);
+		UTIL_TraceLine(vecOrigin, vecOrigin + vecForward * MAX_COORD_RANGE, (CONTENTS_SOLID | CONTENTS_MOVEABLE | CONTENTS_WINDOW | CONTENTS_GRATE), &traceFilterChain, &tr);
 
-		bool bBroadcast = ( UTIL_PointContents( vecOrigin ) != UTIL_PointContents( tr.endpos ) );
+		bool bBroadcast = (UTIL_PointContents(vecOrigin) != UTIL_PointContents(tr.endpos));
 
 		// Josh: This logic was never hooked up -- it only ever used
 		// the vecOrigin for PAS and leaked pFilter, but now it
 		// has been fixed to also do PAS for start + end
 		// instead of just the end/start!
 		CRecipientFilter filter;
-		if ( bBroadcast )
+		if (bBroadcast)
 		{
 			// The projectile is going to cross content types 
 			// (which will block PVS/PAS). Send to every client
@@ -203,8 +203,8 @@ CTFBaseProjectile *CTFBaseProjectile::Create( const char *pszClassname, const Ve
 		else
 		{
 			// just the PVS of where the projectile will start and hit.
-			filter.AddRecipientsByPAS( vecOrigin );
-			filter.AddRecipientsByPAS( tr.endpos );
+			filter.AddRecipientsByPAS(vecOrigin);
+			filter.AddRecipientsByPAS(tr.endpos);
 		}
 
 		CEffectData data;
@@ -212,12 +212,29 @@ CTFBaseProjectile *CTFBaseProjectile::Create( const char *pszClassname, const Ve
 		data.m_vStart = vecVelocity;
 		data.m_fFlags = 6;	// Lifetime
 		data.m_nDamageType = 0;
-		if ( bCritical )
+		if (bCritical)
 		{
 			data.m_nDamageType |= DMG_CRITICAL;
 		}
-		data.m_CustomColors.m_vecColor1 = vColor1;
-		data.m_CustomColors.m_vecColor2 = vColor2;
+
+		bool bUsePlayerColor = false;
+		if (pOwner->IsPlayer())
+		{
+			CTFPlayer *pPlayer = dynamic_cast<CTFPlayer*>(pOwner);
+
+			if (pPlayer->m_Shared.IsUsingCustomColor())
+			{
+				Color color = pPlayer->m_Shared.GetCustomColor();
+				data.m_CustomColors.m_vecColor1 = Vector(color.r(), color.g(), color.b());
+				data.m_CustomColors.m_vecColor2 = Vector(color.r(), color.g(), color.b());
+				bUsePlayerColor = true;
+			}
+		}
+		if (!bUsePlayerColor)
+		{
+			data.m_CustomColors.m_vecColor1 = vColor1;
+			data.m_CustomColors.m_vecColor2 = vColor2;
+		}
 	#ifdef GAME_DLL
 		data.m_nMaterial = pProjectile->GetModelIndex();
 		data.m_nEntIndex = pOwner->entindex();

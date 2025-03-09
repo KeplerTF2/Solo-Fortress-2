@@ -437,23 +437,19 @@ bool CWeaponMedigun::Holster( CBaseCombatWeapon *pSwitchingTo )
 	m_bAttacking = false;
 	m_bHolstered = true;
 
-	// Only do this if we aren't ubered
-	if (!m_bChargeRelease)
-	{
-		RemoveHealingTarget(true);
+	RemoveHealingTarget(true);
 
 #ifdef GAME_DLL
-		RecalcEffectOnTarget(ToTFPlayer(GetOwnerEntity()), true);
-		StopHealingOwner();
+	//RecalcEffectOnTarget(ToTFPlayer(GetOwnerEntity()), true);
+	//StopHealingOwner();
 #endif
 
-		RemoveMedigunShield();
+	RemoveMedigunShield();
 
 #ifdef CLIENT_DLL
-		UpdateEffects();
-		ManageChargeEffect();
+	UpdateEffects();
+	ManageChargeEffect();
 #endif
-	}
 
 	return BaseClass::Holster( pSwitchingTo );
 }
